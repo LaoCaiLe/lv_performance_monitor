@@ -14,7 +14,7 @@
 #include <SDL2/SDL.h>
 #include "lvgl/lvgl.h"
 #include "lvgl/examples/lv_examples.h"
-#include "lvgl/demos/lv_demos.h"
+#include "lv_demos/lv_demo.h"
 #include "lv_drivers/sdl/sdl.h"
 // #include "lv_drivers/display/monitor.h"
 // #include "lv_drivers/indev/mouse.h"
