@@ -12,7 +12,7 @@ CC 					?= gcc
 SRC_DIR				:= ./
 WORKING_DIR			:= ./build
 BUILD_DIR			:= $(WORKING_DIR)/obj
-BIN_DIR				:= $(WORKING_DIR)/bin
+BIN_DIR				:= .
 UI_DIR 				:= ui
 
 WARNINGS 			:= -Wall -Wextra \
