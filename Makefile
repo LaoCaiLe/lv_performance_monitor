@@ -5,7 +5,7 @@
 #
 PROJECT 			?= lvgl-sdl
 MAKEFLAGS 			:= -j $(shell nproc)
-SRC_EXT      		:= c
+SRC_EXT				:= c
 OBJ_EXT				:= o
 CC 					?= gcc
 
@@ -19,9 +19,9 @@ WARNINGS 			:= -Wall -Wextra \
 						-Wshadow -Wundef -Wmaybe-uninitialized -Wmissing-prototypes -Wno-discarded-qualifiers \
 						-Wno-unused-function -Wno-error=strict-prototypes -Wpointer-arith -fno-strict-aliasing -Wno-error=cpp -Wuninitialized \
 						-Wno-unused-parameter -Wno-missing-field-initializers -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default  \
-					  	-Wreturn-type -Wmultichar -Wformat-security -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated  \
+						-Wreturn-type -Wmultichar -Wformat-security -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated  \
 						-Wempty-body -Wshift-negative-value -Wstack-usage=2048 \
-            			-Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith
+						-Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith
 
 CFLAGS 				:= -O0 -g $(WARNINGS)
 
@@ -37,11 +37,12 @@ COMPILE				= $(CC) $(CFLAGS) $(INC) $(DEFINES)
 
 # Automatically include all source files
 SRCS 				:= $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/\.*')
+INCS 				:= $(shell find $(SRC_DIR) -type f -name '*.h' -not -path '*/\.*')
 OBJECTS    			:= $(patsubst $(SRC_DIR)%,$(BUILD_DIR)/%,$(SRCS:.$(SRC_EXT)=.$(OBJ_EXT)))
 
 all: default
 
-$(BUILD_DIR)/%.$(OBJ_EXT): $(SRC_DIR)/%.$(SRC_EXT)
+$(BUILD_DIR)/%.$(OBJ_EXT): $(SRC_DIR)/%.$(SRC_EXT) $(INCS)
 	@echo 'Building project file: $<'
 	@mkdir -p $(dir $@)
 	@$(COMPILE) -c -o "$@" "$<"
