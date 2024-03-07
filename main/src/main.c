@@ -11,51 +11,23 @@
 // #include "lv_drivers/indev/mouse.h"
 // #include "lv_drivers/indev/keyboard.h"
 // #include "lv_drivers/indev/mousewheel.h"
+#include "cpu.h"
+#include "base.h"
 
+extern void cpu_show();
 static void hal_init(void);
 static int tick_thread(void *data);
 
 int main(int argc, char **argv)
 {
-    (void)argc; /*Unused*/
-    (void)argv; /*Unused*/
-
-    /*Initialize LVGL*/
     lv_init();
-
-    /*Initialize the HAL (display, input devices, tick) for LVGL*/
     hal_init();
 
-    //  lv_example_switch_1();
-    //  lv_example_calendar_1();
-    //  lv_example_btnmatrix_2();
-    //  lv_example_checkbox_1();
-    //  lv_example_colorwheel_1();
-    //  lv_example_chart_6();
-    //  lv_example_table_2();
-    //  lv_example_scroll_2();
-    //  lv_example_textarea_1();
-    //  lv_example_msgbox_1();
-    //  lv_example_dropdown_2();
-    //  lv_example_btn_1();
-    //  lv_example_scroll_1();
-    //  lv_example_tabview_1();
-    //  lv_example_tabview_1();
-    //  lv_example_flex_3();
-    //  lv_example_label_1();
-
-    lv_demo_widgets();
-    //  lv_demo_keypad_encoder();
-    //  lv_demo_benchmark();
-    //  lv_demo_stress();
-    //  lv_demo_music();
-
-    //  user_image_demo();
-
+    base_init();
+    cpu_show();
+    // lv_demo_music();
     while (1)
     {
-        /* Periodically call the lv_task handler.
-         * It could be done in a timer interrupt or an OS task too.*/
         lv_timer_handler();
         usleep(5 * 1000);
     }
@@ -125,12 +97,6 @@ static void hal_init(void)
 
     lv_indev_t *enc_indev = lv_indev_drv_register(&indev_drv_3);
     lv_indev_set_group(enc_indev, g);
-
-    /*Set a cursor for the mouse*/
-    // LV_IMG_DECLARE(mouse_cursor_icon);                  /*Declare the image file.*/
-    // lv_obj_t *cursor_obj = lv_img_create(lv_scr_act()); /*Create an image object for the cursor */
-    // lv_img_set_src(cursor_obj, &mouse_cursor_icon);     /*Set the image source*/
-    // lv_indev_set_cursor(mouse_indev, cursor_obj);       /*Connect the image  object to the driver*/
 }
 
 /**
