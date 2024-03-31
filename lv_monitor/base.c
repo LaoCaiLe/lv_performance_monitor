@@ -8,5 +8,4 @@ void base_init()
     lv_obj_set_size(base_obj, SDL_HOR_RES, SDL_VER_RES);
     lv_obj_set_style_bg_color(base_obj, lv_color_hex(0x111111), LV_PART_MAIN);
 
-    // lv_obj_set_style_bg_color(base_obj,lv_color_black(),lv_)
 }

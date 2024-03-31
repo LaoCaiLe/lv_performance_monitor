@@ -26,6 +26,7 @@ int main(int argc, char **argv)
     base_init();
     cpu_show();
     // lv_demo_music();
+    // lv_demo_widgets();
     while (1)
     {
         lv_timer_handler();
