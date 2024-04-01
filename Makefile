@@ -31,12 +31,13 @@ CPPFLAGS 			:= -O0 -g -fpermissive
 DEFINES				:= -D SIMULATOR=1 -D LV_BUILD_TEST=0
 
 # Include simulator inc folder first so lv_conf.h from custom UI can be used instead
-INC 				:= -I./lv_monitor/ -I./ -I./lvgl/ #-I/usr/include/freetype2 -L/usr/local/lib
+INC 				:= -I./ -I./lvgl/ #-I/usr/include/freetype2 -L/usr/local/lib
+INC_CPP				:= -I./lv_monitor/
 LDLIBS	 			:= -lSDL2 -lm #-lfreetype -lavformat -lavcodec -lavutil -lswscale -lm -lz -lpthread
 BIN 				:= $(BIN_DIR)/demo
 
 COMPILE				= $(CC) $(CFLAGS) $(INC) $(DEFINES)
-CPPCOMPILE			= $(CXX) $(CPPFLAGS) $(INC) $(DEFINES)
+CPPCOMPILE			= $(CXX) $(CPPFLAGS) $(INC_CPP) $(DEFINES)
 
 # Automatically include all source files
 SRC_C 				:= $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/\.*')
