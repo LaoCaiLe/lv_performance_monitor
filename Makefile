@@ -5,15 +5,16 @@
 #
 PROJECT 			?= lvgl-sdl
 MAKEFLAGS 			:= -j $(shell nproc)
-SRC_EXT				:= c
+EXT_C				:= c
+EXT_CPP				:= cpp
 OBJ_EXT				:= o
-CC 					?= gcc
+CC 					:= gcc
+CXX					:= g++
 
 SRC_DIR				:= ./
 WORKING_DIR			:= ./build
 BUILD_DIR			:= $(WORKING_DIR)/obj
 BIN_DIR				:= .
-UI_DIR 				:= ui
 
 WARNINGS 			:= -Wall -Wextra \
 						-Wshadow -Wundef -Wmaybe-uninitialized -Wmissing-prototypes -Wno-discarded-qualifiers \
@@ -24,6 +25,7 @@ WARNINGS 			:= -Wall -Wextra \
 						-Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith
 
 CFLAGS 				:= -O0 -g $(WARNINGS)
+CPPFLAGS 			:= -O0 -g -fpermissive
 
 # Add simulator define to allow modification of source
 DEFINES				:= -D SIMULATOR=1 -D LV_BUILD_TEST=0
@@ -34,22 +36,30 @@ LDLIBS	 			:= -lSDL2 -lm #-lfreetype -lavformat -lavcodec -lavutil -lswscale -lm
 BIN 				:= $(BIN_DIR)/demo
 
 COMPILE				= $(CC) $(CFLAGS) $(INC) $(DEFINES)
+CPPCOMPILE			= $(CXX) $(CPPFLAGS) $(INC) $(DEFINES)
 
 # Automatically include all source files
-SRCS 				:= $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/\.*')
+SRC_C 				:= $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/\.*')
+SRC_CPP 			:= $(shell find $(SRC_DIR) -type f -name '*.cpp' -not -path '*/\.*')
 INCS 				:= $(shell find $(SRC_DIR) -type f -name '*.h' -not -path '*/\.*')
-OBJECTS    			:= $(patsubst $(SRC_DIR)%,$(BUILD_DIR)/%,$(SRCS:.$(SRC_EXT)=.$(OBJ_EXT)))
+OBJECTS    			:= $(patsubst $(SRC_DIR)%,$(BUILD_DIR)/%,$(SRC_C:.$(EXT_C)=.$(OBJ_EXT)))
+OBJECTS    			+= $(patsubst $(SRC_DIR)%,$(BUILD_DIR)/%,$(SRC_CPP:.$(EXT_CPP)=.$(OBJ_EXT)))
 
 all: default
 
-$(BUILD_DIR)/%.$(OBJ_EXT): $(SRC_DIR)/%.$(SRC_EXT) $(INCS)
+$(BUILD_DIR)/%.$(OBJ_EXT): $(SRC_DIR)/%.$(EXT_C) $(INCS)
 	@echo 'Building project file: $<'
 	@mkdir -p $(dir $@)
 	@$(COMPILE) -c -o "$@" "$<"
 
+$(BUILD_DIR)/%.$(OBJ_EXT): $(SRC_DIR)/%.$(EXT_CPP) $(INCS)
+	@echo 'Building project file: $<'
+	@mkdir -p $(dir $@)
+	@$(CPPCOMPILE) -c -o "$@" "$<"
+
 default: $(OBJECTS)
 	@mkdir -p $(BIN_DIR)
-	$(CC) -o $(BIN) $(OBJECTS) $(LDFLAGS) ${LDLIBS}
+	$(CXX) -o $(BIN) $(OBJECTS) $(LDFLAGS) ${LDLIBS}
 
 clean:
 	rm -rf $(WORKING_DIR)
