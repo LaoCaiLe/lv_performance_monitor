@@ -1,19 +1,17 @@
-#ifndef __CPU_H
-#define __CPU_H
+#ifndef __DISK_H
+#define __DISK_H
 
 #include "lvgl.h"
 #include "base.h"
 
-class Cpu 
-{
+class Disk{
 public:
-    Cpu(lv_obj_t *base_obj);
-    ~Cpu() = default;
+    Disk(lv_obj_t *base_obj);
+    ~Disk() = default;
     static void get_key_value();
-    static void show_key_value();
+    static void show_key_value(void *obj, int32_t v);
     static void show_key_value_enable();
     static void show_key_value_disable();
-    static void timer_task(lv_timer_t *arg);
 };
 
 // void cpu_show();

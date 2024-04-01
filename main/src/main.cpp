@@ -5,26 +5,27 @@
 #include <SDL2/SDL.h>
 #include "lvgl/lvgl.h"
 #include "lvgl/examples/lv_examples.h"
-#include "lv_demos/lv_demo.h"
 #include "lv_drivers/sdl/sdl.h"
-// #include "lv_drivers/display/monitor.h"
-// #include "lv_drivers/indev/mouse.h"
-// #include "lv_drivers/indev/keyboard.h"
-// #include "lv_drivers/indev/mousewheel.h"
 #include "cpu.h"
 #include "base.h"
+#include "disk.h"
 
 extern void cpu_show();
 static void hal_init(void);
 static int tick_thread(void *data);
-
-int main(int argc, char **argv)
+static lv_obj_t *bg_obj;
+int main(int argc, char *argv[])
 {
     lv_init();
     hal_init();
 
-    base_init();
-    cpu_show();
+    Base base(bg_obj, SDL_HOR_RES, SDL_VER_RES);
+    Cpu cpu(bg_obj);
+    // Disk disk(bg_obj);
+    // disk.show_key_value_enable();
+    cpu.show_key_value_enable();
+    // base_init();
+    // cpu_show();
     // lv_demo_music();
     // lv_demo_widgets();
     while (1)
