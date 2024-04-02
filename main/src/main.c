@@ -6,28 +6,18 @@
 #include "lvgl/lvgl.h"
 #include "lvgl/examples/lv_examples.h"
 #include "lv_drivers/sdl/sdl.h"
-#include "cpu.h"
-#include "base.h"
-#include "disk.h"
+#include "monitor.h"
 
-extern void cpu_show();
 static void hal_init(void);
 static int tick_thread(void *data);
-static lv_obj_t *bg_obj;
+
 int main(int argc, char *argv[])
 {
     lv_init();
     hal_init();
 
-    Base base(bg_obj, SDL_HOR_RES, SDL_VER_RES);
-    Cpu cpu(bg_obj);
-    // Disk disk(bg_obj);
-    // disk.show_key_value_enable();
-    cpu.show_key_value_enable();
-    // base_init();
-    // cpu_show();
-    // lv_demo_music();
-    // lv_demo_widgets();
+    monitor_show();
+
     while (1)
     {
         lv_timer_handler();
