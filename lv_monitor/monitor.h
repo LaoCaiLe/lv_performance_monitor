@@ -9,4 +9,5 @@ void base_init(void);
 void mem_init(void);
 void cpu_init(void);
 void disk_init(void);
+void cpu_temp_init(void);
 #endif
