@@ -1,5 +1,6 @@
 #include "monitor.h"
 #include <stdio.h>
+#include "info.h"
 
 static lv_obj_t *base_obj;
 static lv_obj_t *chart_cpu;
@@ -73,24 +74,32 @@ static void draw_event_cb(lv_event_t *e)
 static void cpu_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
-    int val = lv_rand(50, 60);
+    uint16_t cpu_rate;
+    // val = lv_rand(50, 60);
+    get_cpu_load(&cpu_rate);
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
-    snprintf(buf, sizeof(buf), "%d%%", val);
+    snprintf(buf, sizeof(buf), "%d%%", cpu_rate);
     lv_label_set_text(text, buf);
-    lv_chart_set_next_value(chart_cpu, ser_cpu, val);
-    // lv_chart_set_next_value(chart_cpu, ser_cpu, lv_rand(70, 85));
+    lv_chart_set_next_value(chart_cpu, ser_cpu, cpu_rate);
 }
 
 static void mem_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
-    int val = lv_rand(50, 60);
+    uint16_t mem_rate;
+    float use_mem_byte, total_mem_byte;
+    float use_mem_gb, total_mem_gb;
+    // mem_rate = lv_rand(50, 60);
+    get_mem_load(&use_mem_byte, &total_mem_byte, &mem_rate);
+    use_mem_gb = use_mem_byte / 1024.0 / 1024.0;
+    total_mem_gb = total_mem_byte / 1024.0 / 1024.0;
+
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
-    snprintf(buf, sizeof(buf), "%d%%", val);
+    snprintf(buf, sizeof(buf), "%.1fGB / %.1fGB", use_mem_gb, total_mem_gb);
     lv_label_set_text(text, buf);
-    lv_chart_set_next_value(chart_cpu, ser_cpu, val);
+    lv_chart_set_next_value(chart_mem, ser_mem, mem_rate);
 }
 
 static void disk_info_cb(void *obj, int32_t v)
@@ -128,7 +137,7 @@ void cpu_init(void)
     lv_obj_set_size(cpu_obj, 140, 95);
     lv_obj_set_style_bg_color(cpu_obj, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_border_opa(cpu_obj, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_set_align(cpu_obj, LV_ALIGN_TOP_RIGHT);
+    lv_obj_set_align(cpu_obj, LV_ALIGN_TOP_LEFT);
     lv_obj_clear_flag(cpu_obj, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *title = lv_label_create(cpu_obj);
@@ -175,7 +184,7 @@ void mem_init(void)
     lv_obj_set_size(mem_obj, 140, 95);
     lv_obj_set_style_bg_color(mem_obj, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_border_opa(mem_obj, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_set_align(mem_obj, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_align(mem_obj, LV_ALIGN_TOP_RIGHT);
     lv_obj_clear_flag(mem_obj, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *title = lv_label_create(mem_obj);
