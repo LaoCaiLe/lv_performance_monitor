@@ -82,7 +82,54 @@ int get_mem_load(float *use_mem, float *total_mem, uint16_t *mem_load)
     }
 
     *mem_load = (int)(*use_mem * 100 / *total_mem);
+    fclose(file);
 
     LV_LOG_INFO("use_mem[%.1f], total_mem[%.1f],  load:%d\n", *use_mem, *total_mem, *mem_load);
+    return ret_ok;
+}
+
+int get_disk_use(int disk_all_bytes, int disk_use_bytes)
+{
+   
+}
+
+int get_eth0_speed(long *upload_speed_bps, long *download_spped_bps)
+{
+    uint8_t i = 0;
+    char line[1024];
+    char *token = NULL;
+    long curr_upload_speed = 0;
+    long curr_download_speed = 0;
+    static long prev_upload_speed = 0;
+    static long prev_download_speed = 0;
+
+    FILE *file = fopen("/sys/class/net/eth0/statistics/rx_bytes", "r");
+    if (file == NULL)
+    {
+        LV_LOG_ERROR("can not open file!");
+        return ret_fail;
+    }
+    fgets(line, sizeof(line), file);
+    curr_download_speed = atoi(line);
+
+    fclose(file);
+
+    file = fopen("/sys/class/net/eth0/statistics/tx_bytes", "r");
+    if (file == NULL)
+    {
+        LV_LOG_ERROR("can not open file!");
+        return ret_fail;
+    }
+    fgets(line, sizeof(line), file);
+    curr_upload_speed = atoi(line);
+
+    fclose(file);
+
+    *upload_speed_bps = curr_upload_speed - prev_upload_speed;
+    *download_spped_bps = curr_download_speed - prev_download_speed;
+    prev_upload_speed = curr_upload_speed;
+    prev_download_speed = curr_download_speed;
+
+    printf("download_spped_bps[%d], upload_speed_bps[%d]\n", (*download_spped_bps)/1024, (*upload_speed_bps)/1024);
     return ret_ok;
 }
