@@ -64,7 +64,6 @@ static void draw_event_cb(lv_event_t *e)
         /*Horizontal line*/
         else
         {
-
             dsc->line_dsc->color = lv_palette_lighten(LV_PALETTE_GREY, 1);
             dsc->line_dsc->opa = LV_OPA_20;
         }
@@ -75,10 +74,11 @@ static void cpu_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
     uint16_t cpu_rate;
-    // val = lv_rand(50, 60);
-    get_cpu_load(&cpu_rate);
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
+
+    get_cpu_load(&cpu_rate);
+
     snprintf(buf, sizeof(buf), "%d%%", cpu_rate);
     lv_label_set_text(text, buf);
     lv_chart_set_next_value(chart_cpu, ser_cpu, cpu_rate);
@@ -88,28 +88,80 @@ static void mem_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
     uint16_t mem_rate;
-    float use_mem_byte, total_mem_byte;
+    uint32_t use_mem_kb, total_mem_kb;
     float use_mem_gb, total_mem_gb;
-    // mem_rate = lv_rand(50, 60);
-    get_mem_load(&use_mem_byte, &total_mem_byte, &mem_rate);
-    use_mem_gb = use_mem_byte / 1024.0 / 1024.0;
-    total_mem_gb = total_mem_byte / 1024.0 / 1024.0;
-
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
+
+    get_mem_load(&use_mem_kb, &total_mem_kb, &mem_rate);
+    // get_ethernet_speed(&a, &b);
+    // get_uptime(&a);
+    use_mem_gb = use_mem_kb / 1024.0 / 1024.0;
+    total_mem_gb = total_mem_kb / 1024.0 / 1024.0;
+
     snprintf(buf, sizeof(buf), "%.1fGB / %.1fGB", use_mem_gb, total_mem_gb);
     lv_label_set_text(text, buf);
     lv_chart_set_next_value(chart_mem, ser_mem, mem_rate);
 }
 
+static void cpu_uptime_task(lv_timer_t *arg)
+{
+    char buf[64] = {0};
+    uint64_t uptime_sec;
+    uint32_t uptime_min;
+    lv_timer_t *timer = (lv_timer_t *)arg;
+    lv_obj_t *text = (lv_obj_t *)timer->user_data;
+
+    get_cpu_uptime(&uptime_sec);
+    uptime_min = uptime_sec / 60;
+
+    if (uptime_min > 1440)
+        snprintf(buf, sizeof(buf), "uptime %d days\n", uptime_min / 1440);
+    else if (uptime_min > 60)
+        snprintf(buf, sizeof(buf), "uptime %d hours\n", uptime_min / 60);
+    else
+        snprintf(buf, sizeof(buf), "uptime %d min\n", uptime_min);
+
+    lv_label_set_text(text, buf);
+}
+
+static void ether_timer_task(lv_timer_t *arg)
+{
+    char buf[64] = {0};
+    uint32_t upload_speed_bps, download_speed_bps;
+    lv_timer_t *timer = (lv_timer_t *)arg;
+    lv_obj_t *text = (lv_obj_t *)timer->user_data;
+
+    get_ethernet_speed(&upload_speed_bps, &download_speed_bps);
+
+    snprintf(buf, sizeof(buf), "Up:%.2fMb/s -- Down:%.2fMb/s\n", upload_speed_bps / 1000.0 / 1000.0, download_speed_bps / 1000.0 / 1000.0);
+
+    lv_label_set_text(text, buf);
+}
+
+static void disk_timer_task(lv_timer_t *arg)
+{
+    char buf[64] = {0};
+    uint32_t disk_all_bytes, disk_use_bytes, disk_valid_bytes;
+    uint16_t disk_use_rate;
+    lv_timer_t *timer = (lv_timer_t *)arg;
+    lv_obj_t *arc = (lv_obj_t *)timer->user_data;
+    get_disk_use(&disk_all_bytes, &disk_use_bytes, &disk_valid_bytes, &disk_use_rate);
+
+
+    // snprintf(buf, sizeof(buf), "Up:%.2fMb/s -- Down:%.2fMb/s\n", upload_speed_bps / 1000.0 / 1000.0, download_speed_bps / 1000.0 / 1000.0);
+
+    lv_arc_set_value(arc, disk_use_rate);
+}
+
 static void disk_info_cb(void *obj, int32_t v)
 {
-    lv_arc_set_angles(obj, v, 360);
+    lv_arc_set_value(obj, v);
 }
 
 static void cpu_temp_info_cb(void *obj, int32_t v)
 {
-    lv_arc_set_angles(obj, v, 360);
+    lv_arc_set_angles(obj, 0, v );
 }
 
 void monitor_show(void)
@@ -119,8 +171,9 @@ void monitor_show(void)
     mem_init();
     disk_init();
     cpu_temp_init();
+    uptime_init();
+    ethernet_init();
 }
-// static lv_obj_t *msg = NULL;
 
 void base_init(void)
 {
@@ -145,18 +198,18 @@ void cpu_init(void)
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_10, LV_PART_MAIN);
 
-    static lv_obj_t *msg = NULL;
+    static lv_obj_t *text = NULL;
 
-    msg = lv_label_create(cpu_obj);
-    lv_label_set_text(msg, " ");
-    lv_obj_align(msg, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(msg, &lv_font_montserrat_10, LV_PART_MAIN);
+    text = lv_label_create(cpu_obj);
+    lv_label_set_text(text, " ");
+    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
+    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
     lv_style_set_text_color(&font_style, lv_color_white());
     lv_obj_add_style(title, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(msg, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
 
     chart_cpu = lv_chart_create(cpu_obj);
     lv_obj_set_size(chart_cpu, 130, 80);
@@ -174,7 +227,7 @@ void cpu_init(void)
     lv_obj_set_style_size(chart_cpu, 0, LV_PART_INDICATOR);
 
     ser_cpu = lv_chart_add_series(chart_cpu, lv_palette_main(LV_PALETTE_GREEN), LV_CHART_AXIS_PRIMARY_Y);
-    lv_timer_create(cpu_timer_task, 1000, (void *)msg);
+    lv_timer_create(cpu_timer_task, 1000, (void *)text);
 }
 
 void mem_init(void)
@@ -192,17 +245,17 @@ void mem_init(void)
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_10, LV_PART_MAIN);
 
-    static lv_obj_t *msg = NULL;
-    msg = lv_label_create(mem_obj);
-    lv_label_set_text(msg, " ");
-    lv_obj_align(msg, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(msg, &lv_font_montserrat_10, LV_PART_MAIN);
+    static lv_obj_t *text = NULL;
+    text = lv_label_create(mem_obj);
+    lv_label_set_text(text, " ");
+    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
+    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
     lv_style_set_text_color(&font_style, lv_color_white());
     lv_obj_add_style(title, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(msg, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
 
     chart_mem = lv_chart_create(mem_obj);
     lv_obj_set_size(chart_mem, 130, 80);
@@ -220,7 +273,7 @@ void mem_init(void)
     lv_obj_set_style_size(chart_mem, 0, LV_PART_INDICATOR);
 
     ser_mem = lv_chart_add_series(chart_mem, lv_palette_main(LV_PALETTE_PINK), LV_CHART_AXIS_PRIMARY_Y);
-    lv_timer_create(mem_timer_task, 1000, (void*)msg);
+    lv_timer_create(mem_timer_task, 1000, (void*)text);
 }
 
 void disk_init(void)
@@ -259,15 +312,7 @@ void disk_init(void)
 
     lv_obj_align(arc, LV_ALIGN_BOTTOM_MID, 0, 10);
 
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, arc);
-    lv_anim_set_exec_cb(&a, disk_info_cb);
-    lv_anim_set_time(&a, 3000);
-    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE); /*Just for the demo*/
-    lv_anim_set_repeat_delay(&a, 500);
-    lv_anim_set_values(&a, 360, 0);
-    lv_anim_start(&a);
+    lv_timer_create(disk_timer_task, 1000 * 1, (void *)arc);
 }
 
 void cpu_temp_init(void)
@@ -311,6 +356,38 @@ void cpu_temp_init(void)
     lv_anim_set_time(&a, 3000);
     lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE); /*Just for the demo*/
     lv_anim_set_repeat_delay(&a, 300);
-    lv_anim_set_values(&a, 360, 0);
+    lv_anim_set_values(&a, 0, 360);
     lv_anim_start(&a);
+}
+
+void uptime_init(void)
+{
+    static lv_obj_t *text = NULL;
+    text = lv_label_create(base_obj);
+    lv_label_set_text(text, " ");
+    lv_obj_align(text, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
+
+    static lv_style_t font_style;
+    lv_style_init(&font_style);
+    lv_style_set_text_color(&font_style, lv_color_white());
+    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+
+    lv_timer_create(cpu_uptime_task, 1000 * 1, (void *)text);
+}
+
+void ethernet_init(void)
+{
+    static lv_obj_t *text = NULL;
+    text = lv_label_create(base_obj);
+    lv_label_set_text(text, " ");
+    lv_obj_align(text, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
+
+    static lv_style_t font_style;
+    lv_style_init(&font_style);
+    lv_style_set_text_color(&font_style, lv_color_white());
+    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+
+    lv_timer_create(ether_timer_task, 1000 * 1, (void *)text);
 }
