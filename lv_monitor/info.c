@@ -3,7 +3,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include <dirent.h>
+#include <errno.h>
 
 int get_cpu_load(uint16_t *cpu_load)
 {
@@ -88,7 +93,7 @@ int get_mem_load(uint32_t *use_mem_kb, uint32_t *total_mem_kb, uint16_t *mem_loa
     return ret_ok;
 }
 
-int get_disk_use(uint32_t *disk_all_bytes, uint32_t *disk_use_bytes, uint32_t *disk_valid_bytes, uint16_t *disk_use_rate)
+int get_disk_use(uint32_t *disk_all_kb, uint32_t *disk_use_kb, uint32_t *disk_valid_kb, uint16_t *disk_use_rate)
 {
     FILE *file;
     char line[1024];
@@ -104,10 +109,10 @@ int get_disk_use(uint32_t *disk_all_bytes, uint32_t *disk_use_bytes, uint32_t *d
     fgets(line, sizeof(line), file);
     fgets(line, sizeof(line), file);
 
-    sscanf(line, "%s %u %u %u %u%%", filesystem, disk_all_bytes, disk_use_bytes, disk_valid_bytes, disk_use_rate);
+    sscanf(line, "%s %u %u %u %u%%", filesystem, disk_all_kb, disk_use_kb, disk_valid_kb, disk_use_rate);
     pclose(file);
 
-    LV_LOG_INFO("filesystem[%s], disk_all_bytes[%u], disk_use_bytes[%u], disk_valid_bytes[%u], disk_use_rate[%u%%]", filesystem, disk_all_bytes, disk_use_bytes, disk_valid_bytes, disk_use_rate);
+    LV_LOG_INFO("filesystem[%s], disk_all_kb[%u], disk_use_kb[%u], disk_valid_kb[%u], disk_use_rate[%u%%]\n", filesystem, *disk_all_kb, *disk_use_kb, *disk_valid_kb, *disk_use_rate);
 
     return ret_ok;
 }
@@ -172,7 +177,105 @@ int get_cpu_uptime(uint64_t *uptime_sec)
     token = strtok(line, " ");
     *uptime_sec = atoi(token);
 
+    fclose(file);
     LV_LOG_INFO("uptime_sec[%lu]\n", *uptime_sec);
+
+    return ret_ok;
+}
+
+int get_cpu_temperature(uint32_t *temp)
+{
+    char line[1024] = {0};
+    FILE *file = NULL;
+
+    file = fopen(CPU_TEMP_PATH, "r");
+    if (file == NULL)
+    {
+        LV_LOG_ERROR("can not open file " CPU_TEMP_PATH "!\n");
+        return ret_fail;
+    }
+    fgets(line, sizeof(line), file);
+    *temp = atoi(line);
+
+    fclose(file);
+    LV_LOG_INFO("temp[%lu]\n", *temp);
+
+    return ret_ok;
+}
+
+int get_task_num(uint32_t *num_processes, uint32_t *num_threads, uint32_t *num_zombies)
+{
+    DIR *dir = opendir(PRCO_PATH);
+    if (dir == NULL) {
+        LV_LOG_ERROR("Failed to open /proc directory, errno[%d]", errno);
+        return ret_fail;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_DIR && strtol(entry->d_name, NULL, 10) > 0) {
+            (*num_processes)++;
+
+            char task_path[PATH_MAX];
+            snprintf(task_path, sizeof(task_path), "%s/%s/task", PRCO_PATH, entry->d_name);
+
+            DIR *task_dir = opendir(task_path);
+            if (task_dir == NULL) {
+                continue;
+            }
+
+            struct dirent *task_entry;
+            while ((task_entry = readdir(task_dir)) != NULL) {
+                if (task_entry->d_type == DT_DIR && strtol(task_entry->d_name, NULL, 10) > 0) {
+                    (*num_threads)++;
+                }
+            }
+            closedir(task_dir);
+
+            char status_path[PATH_MAX];
+            snprintf(status_path, sizeof(status_path), "%s/%s/stat", PRCO_PATH, entry->d_name);
+
+            FILE *fd = fopen(status_path, "r");
+            if (fd == NULL) {
+                continue;
+            }
+            char buffer[256];
+            if (fgets(buffer, sizeof(buffer), fd) != NULL) {
+                char *token = strtok(buffer, " ");
+                for (int i = 0; i < 2 && token != NULL; i++) {
+                    token = strtok(NULL, " ");
+                }
+
+                if (token != NULL && strcmp(token, "Z") == 0) {
+                    (*num_zombies)++;
+                }
+            }
+            fclose(fd);
+        }
+    }
+    closedir(dir);
+    LV_LOG_INFO("num_processes[%u],num_threads[%u],num_zombies[%u]\n", *num_processes, *num_threads, *num_zombies);
+
+    return ret_ok;
+}
+
+int get_time_string(char *string)
+{
+    time_t current_time;
+    struct tm * time_info;
+
+    time(&current_time);
+    time_info = localtime(&current_time);
+    if (time_info == NULL) {
+        LV_LOG_ERROR("Failed to get local time. errno[%d]\n",errno);
+        return ret_fail;
+    }
+
+    if (!strftime(string, 64, "%H:%M:%S", time_info)) {
+        LV_LOG_ERROR("Failed to format time. errno[%d]\n",errno);
+    }
+
+    LV_LOG_INFO("Current time: %s\n", string);
 
     return ret_ok;
 }
