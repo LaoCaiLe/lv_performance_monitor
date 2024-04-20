@@ -126,6 +126,7 @@ int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
     uint32_t curr_download_speed = 0;
     static uint32_t prev_upload_speed = 0;
     static uint32_t prev_download_speed = 0;
+    static bool is_first = true;
 
     snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/rx_bytes", ETHER_DEVICE);
     file = fopen(file_path, "r");
@@ -152,10 +153,16 @@ int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
     *upload_speed_bps = (curr_upload_speed - prev_upload_speed) * 8;
     *download_speed_bps = (curr_download_speed - prev_download_speed) * 8;
 
-    LV_LOG_INFO("download_speed_bps[%u], upload_speed_bps[%u]\n", *download_speed_bps, *upload_speed_bps);
-
     prev_upload_speed = curr_upload_speed;
     prev_download_speed = curr_download_speed;
+
+    if(is_first)
+    {
+        *upload_speed_bps = 0;
+        *download_speed_bps = 0;
+        is_first = false;
+    }
+    LV_LOG_INFO("download_speed_bps[%u], upload_speed_bps[%u]\n", *download_speed_bps, *upload_speed_bps);
 
     return ret_ok;
 }
@@ -195,7 +202,7 @@ int get_cpu_temperature(uint32_t *temp)
         return ret_fail;
     }
     fgets(line, sizeof(line), file);
-    *temp = atoi(line);
+    *temp = atoi(line)/1000;
 
     fclose(file);
     LV_LOG_INFO("temp[%lu]\n", *temp);
@@ -259,7 +266,7 @@ int get_task_num(uint32_t *num_processes, uint32_t *num_threads, uint32_t *num_z
     return ret_ok;
 }
 
-int get_time_string(char *string)
+int get_time_string(uint16_t *hours, uint16_t *minutes, uint16_t *seconds)
 {
     time_t current_time;
     struct tm * time_info;
@@ -271,11 +278,11 @@ int get_time_string(char *string)
         return ret_fail;
     }
 
-    if (!strftime(string, 64, "%H:%M:%S", time_info)) {
-        LV_LOG_ERROR("Failed to format time. errno[%d]\n",errno);
-    }
+    *hours = time_info->tm_hour;
+    *minutes = time_info->tm_min;
+    *seconds = time_info->tm_sec;
 
-    LV_LOG_INFO("Current time: %s\n", string);
-
+    LV_LOG_INFO("Current time: %d:%d:%d\n", *hours, *minutes, *seconds);
+    
     return ret_ok;
 }

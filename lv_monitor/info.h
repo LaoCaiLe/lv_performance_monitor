@@ -24,6 +24,6 @@ int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
 int get_cpu_uptime(uint64_t *uptime_sec);
 int get_cpu_temperature(uint32_t *temp);
 int get_task_num(uint32_t *num_processes, uint32_t *num_threads, uint32_t *num_zombies);
-int get_time_string(char *string);
+int get_time_string(uint16_t *hours, uint16_t *minutes, uint16_t *seconds);
 
 #endif
