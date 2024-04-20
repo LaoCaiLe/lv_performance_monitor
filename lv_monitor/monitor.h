@@ -11,5 +11,6 @@ void disk_init(void);
 void cpu_temp_init(void);
 void uptime_init(void);
 void ethernet_init(void);
-
+void proc_init(void);
+void time_init(void);
 #endif

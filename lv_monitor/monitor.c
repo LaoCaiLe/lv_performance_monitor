@@ -8,6 +8,22 @@ static lv_obj_t *chart_mem;
 static lv_chart_series_t *ser_cpu;
 static lv_chart_series_t *ser_mem;
 
+LV_FONT_DECLARE(JetBrains_Momo_10)
+LV_FONT_DECLARE(JetBrains_Momo_11)
+LV_FONT_DECLARE(JetBrains_Momo_12)
+
+typedef struct _disk_info_t{
+    lv_obj_t *arc;
+    lv_obj_t *title;
+    lv_obj_t *userate;
+} disk_info_t;
+
+typedef struct _temp_info_t{
+    lv_obj_t *arc;
+    lv_obj_t *title;
+    lv_obj_t *temperature;
+} temp_info_t;
+
 static void draw_event_cb(lv_event_t *e)
 {
     lv_obj_t *obj = lv_event_get_target(e);
@@ -83,23 +99,21 @@ static void cpu_timer_task(lv_timer_t *arg)
     lv_label_set_text(text, buf);
     lv_chart_set_next_value(chart_cpu, ser_cpu, cpu_rate);
 }
-
 static void mem_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
     uint16_t mem_rate;
     uint32_t use_mem_kb, total_mem_kb;
-    float use_mem_gb, total_mem_gb;
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
 
     get_mem_load(&use_mem_kb, &total_mem_kb, &mem_rate);
-    // get_ethernet_speed(&a, &b);
-    // get_uptime(&a);
-    use_mem_gb = use_mem_kb / 1024.0 / 1024.0;
-    total_mem_gb = total_mem_kb / 1024.0 / 1024.0;
 
-    snprintf(buf, sizeof(buf), "%.1fGB / %.1fGB", use_mem_gb, total_mem_gb);
+    if(total_mem_kb > (1024 * 1024))
+        snprintf(buf, sizeof(buf), "%.1fGB/%.1fGB ", use_mem_kb / 1024.0 / 1024.0, total_mem_kb / 1024.0 / 1024.0);
+    else
+        snprintf(buf, sizeof(buf), "%.0fMB/%.0fMB ", use_mem_kb / 1024.0, total_mem_kb / 1024.0);
+
     lv_label_set_text(text, buf);
     lv_chart_set_next_value(chart_mem, ser_mem, mem_rate);
 }
@@ -116,11 +130,11 @@ static void cpu_uptime_task(lv_timer_t *arg)
     uptime_min = uptime_sec / 60;
 
     if (uptime_min > 1440)
-        snprintf(buf, sizeof(buf), "uptime %d days\n", uptime_min / 1440);
+        snprintf(buf, sizeof(buf), "%d days\n", uptime_min / 1440);
     else if (uptime_min > 60)
-        snprintf(buf, sizeof(buf), "uptime %d hours\n", uptime_min / 60);
+        snprintf(buf, sizeof(buf), "%d hours\n", uptime_min / 60);
     else
-        snprintf(buf, sizeof(buf), "uptime %d min\n", uptime_min);
+        snprintf(buf, sizeof(buf), "%d min\n", uptime_min);
 
     lv_label_set_text(text, buf);
 }
@@ -129,12 +143,18 @@ static void ether_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
     uint32_t upload_speed_bps, download_speed_bps;
+    float upload_speed_mps, download_speed_mps;
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
 
     get_ethernet_speed(&upload_speed_bps, &download_speed_bps);
 
-    snprintf(buf, sizeof(buf), "Up:%.2fMb/s -- Down:%.2fMb/s\n", upload_speed_bps / 1000.0 / 1000.0, download_speed_bps / 1000.0 / 1000.0);
+    upload_speed_mps = upload_speed_bps / 1000.0 / 1000.0;
+    download_speed_mps = download_speed_bps / 1000.0 / 1000.0;
+    if(upload_speed_mps >= 10.0 || download_speed_mps >= 10.0)
+        snprintf(buf, sizeof(buf), "#009080 "LV_SYMBOL_UPLOAD "# %3dMb/s " "#005080 "LV_SYMBOL_DOWNLOAD "# %3dMb/s\n", (int)upload_speed_mps, (int)download_speed_mps);
+    else
+        snprintf(buf, sizeof(buf), "#009080 "LV_SYMBOL_UPLOAD "# %.1fMb/s " "#005080 "LV_SYMBOL_DOWNLOAD "# %.1fMb/s\n", upload_speed_mps, download_speed_mps);
 
     lv_label_set_text(text, buf);
 }
@@ -142,26 +162,55 @@ static void ether_timer_task(lv_timer_t *arg)
 static void disk_timer_task(lv_timer_t *arg)
 {
     char buf[64] = {0};
-    uint32_t disk_all_bytes, disk_use_bytes, disk_valid_bytes;
+    uint32_t disk_all_kb, disk_use_kb, disk_valid_kb;
     uint16_t disk_use_rate;
     lv_timer_t *timer = (lv_timer_t *)arg;
-    lv_obj_t *arc = (lv_obj_t *)timer->user_data;
-    get_disk_use(&disk_all_bytes, &disk_use_bytes, &disk_valid_bytes, &disk_use_rate);
+    disk_info_t *disk_info = (disk_info_t *)(timer->user_data);
 
+    get_disk_use(&disk_all_kb, &disk_use_kb, &disk_valid_kb, &disk_use_rate);
 
-    // snprintf(buf, sizeof(buf), "Up:%.2fMb/s -- Down:%.2fMb/s\n", upload_speed_bps / 1000.0 / 1000.0, download_speed_bps / 1000.0 / 1000.0);
+    lv_arc_set_value(disk_info->arc, disk_use_rate);
 
-    lv_arc_set_value(arc, disk_use_rate);
+    snprintf(buf, sizeof(buf), "#E91E63 %.1fGB#\n%.1fGB",
+             disk_use_kb / 1024.0 / 1024.0,
+             disk_valid_kb / 1024.0 / 1024.0);
+    lv_label_set_text(disk_info->userate, buf );
+    snprintf(buf, sizeof(buf), "Disk     %d%%", disk_use_rate);
+    lv_label_set_text(disk_info->title, buf);
 }
 
-static void disk_info_cb(void *obj, int32_t v)
+static void temp_timer_task(lv_timer_t *arg)
 {
-    lv_arc_set_value(obj, v);
+    uint32_t temp = 0;
+    lv_timer_t *timer = (lv_timer_t *)arg;
+    temp_info_t *temp_info = (temp_info_t *)timer->user_data;
+    if (ret_ok !=get_cpu_temperature(&temp))
+        temp = lv_rand(30, 50);
+    lv_arc_set_value(temp_info->arc, temp);
+    lv_arc_set_value(temp_info->arc, temp);
+    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00fff3 %d#'C", temp);
 }
 
-static void cpu_temp_info_cb(void *obj, int32_t v)
+static void time_timer_task(lv_timer_t *arg)
 {
-    lv_arc_set_angles(obj, 0, v );
+    static bool colon = false;
+    lv_timer_t *timer = (lv_timer_t *)arg;
+    lv_obj_t *text = (lv_obj_t *)timer->user_data;
+
+    char buf[64];
+    get_time_string(buf);
+    lv_label_set_text(text, buf);
+}
+
+static void proc_timer_task(lv_timer_t *arg)
+{
+    char buf[128];
+    uint32_t num_process=0, num_thread=0, num_zombie=0;
+    lv_timer_t *timer = (lv_timer_t *)arg;
+    lv_obj_t *text = (lv_obj_t *)timer->user_data;
+
+    get_task_num(&num_process, &num_thread, &num_zombie);
+    lv_label_set_text_fmt(text, "process:%d\nthreads:%d\nzombies:%d", num_process, num_thread, num_zombie);
 }
 
 void monitor_show(void)
@@ -171,6 +220,8 @@ void monitor_show(void)
     mem_init();
     disk_init();
     cpu_temp_init();
+    proc_init();
+    time_init();
     uptime_init();
     ethernet_init();
 }
@@ -179,6 +230,7 @@ void base_init(void)
 {
     base_obj = lv_obj_create(lv_scr_act());
     lv_obj_set_size(base_obj, LV_HOR_RES, LV_VER_RES);
+    lv_obj_clear_flag(base_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(base_obj, lv_color_hex(0x111111), LV_PART_MAIN);
 }
 
@@ -190,20 +242,25 @@ void cpu_init(void)
     lv_obj_set_size(cpu_obj, 140, 95);
     lv_obj_set_style_bg_color(cpu_obj, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_border_opa(cpu_obj, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_set_align(cpu_obj, LV_ALIGN_TOP_LEFT);
+    lv_obj_align(cpu_obj, LV_ALIGN_TOP_LEFT, 0, -5);
     lv_obj_clear_flag(cpu_obj, LV_OBJ_FLAG_SCROLLABLE);
 
+    // static lv_style_t style;
+    // lv_style_init(&style);
+    // lv_style_set_shadow_width(&style, 15);
+    // lv_style_set_shadow_color(&style, lv_color_white());
+    // lv_obj_add_style(cpu_obj, &style, LV_PART_MAIN);
     lv_obj_t *title = lv_label_create(cpu_obj);
     lv_label_set_text(title, "CPU");
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_set_style_text_font(title, &JetBrains_Momo_11, LV_PART_MAIN);
 
     static lv_obj_t *text = NULL;
 
     text = lv_label_create(cpu_obj);
     lv_label_set_text(text, " ");
     lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_11, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
@@ -217,7 +274,7 @@ void cpu_init(void)
     lv_obj_set_style_bg_color(chart_cpu, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_border_opa(chart_cpu, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_opa(chart_cpu, LV_OPA_COVER, LV_PART_MAIN);
-    lv_chart_set_type(chart_cpu, LV_CHART_TYPE_LINE); /*Show lines and points too*/
+    lv_chart_set_type(chart_cpu, LV_CHART_TYPE_LINE);
 
     lv_chart_set_div_line_count(chart_cpu, 6, 0);
     lv_chart_set_point_count(chart_cpu, 60);
@@ -227,7 +284,8 @@ void cpu_init(void)
     lv_obj_set_style_size(chart_cpu, 0, LV_PART_INDICATOR);
 
     ser_cpu = lv_chart_add_series(chart_cpu, lv_palette_main(LV_PALETTE_GREEN), LV_CHART_AXIS_PRIMARY_Y);
-    lv_timer_create(cpu_timer_task, 1000, (void *)text);
+    lv_timer_t *timer = lv_timer_create(cpu_timer_task, 1000, (void *)text);
+    cpu_timer_task(timer);
 }
 
 void mem_init(void)
@@ -237,19 +295,19 @@ void mem_init(void)
     lv_obj_set_size(mem_obj, 140, 95);
     lv_obj_set_style_bg_color(mem_obj, lv_color_hex(0x222222), LV_PART_MAIN);
     lv_obj_set_style_border_opa(mem_obj, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_set_align(mem_obj, LV_ALIGN_TOP_RIGHT);
+    lv_obj_align(mem_obj, LV_ALIGN_TOP_RIGHT, 0, -5);
     lv_obj_clear_flag(mem_obj, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *title = lv_label_create(mem_obj);
     lv_label_set_text(title, "MEM");
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_set_style_text_font(title, &JetBrains_Momo_11, LV_PART_MAIN);
 
     static lv_obj_t *text = NULL;
     text = lv_label_create(mem_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 12, -12);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_11, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
@@ -273,121 +331,231 @@ void mem_init(void)
     lv_obj_set_style_size(chart_mem, 0, LV_PART_INDICATOR);
 
     ser_mem = lv_chart_add_series(chart_mem, lv_palette_main(LV_PALETTE_PINK), LV_CHART_AXIS_PRIMARY_Y);
-    lv_timer_create(mem_timer_task, 1000, (void*)text);
+    lv_timer_t *timer = lv_timer_create(mem_timer_task, 1000, (void*)text);
+    mem_timer_task(timer);
+
 }
 
 void disk_init(void)
 {
     static lv_obj_t *disk_obj;
     disk_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(disk_obj, 70, 90);
-    lv_obj_align(disk_obj, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    lv_obj_set_size(disk_obj, 90, 95);
+    lv_obj_align(disk_obj, LV_ALIGN_BOTTOM_LEFT, 0, -20);
     lv_obj_clear_flag(disk_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_opa(disk_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_bg_color(disk_obj, lv_color_hex(0x222222), LV_PART_MAIN);
 
-    lv_obj_t *arc = lv_arc_create(disk_obj);
-    lv_arc_set_rotation(arc, 270);
-    lv_arc_set_angles(arc, 0, 360);
-    lv_arc_set_bg_angles(arc, 0, 360);
+    static disk_info_t disk_info;
+    memset(&disk_info, 0x00, sizeof(disk_info_t));
+    disk_info.arc = lv_arc_create(disk_obj);
+    lv_arc_set_rotation(disk_info.arc, 270);
+    lv_arc_set_angles(disk_info.arc, 0, 360);
+    lv_arc_set_bg_angles(disk_info.arc, 0, 360);
+    lv_obj_set_size(disk_info.arc, 70, 70);
 
     static lv_style_t fg_style, bg_style;
     lv_style_init(&fg_style);
     lv_style_init(&bg_style);
 
-    lv_obj_set_size(arc, 55, 55);
     lv_style_set_arc_color(&fg_style, lv_color_white());
     lv_style_set_arc_rounded(&fg_style, false);
-    lv_style_set_arc_width(&fg_style, 5);
+    lv_style_set_arc_width(&fg_style, 6);
 
     lv_style_set_arc_color(&bg_style, lv_color_hex(0xE91E63));
     lv_style_set_arc_rounded(&bg_style, false);
-    lv_style_set_arc_width(&bg_style, 5);
+    lv_style_set_arc_width(&bg_style, 6);
 
-    lv_obj_add_style(arc, &fg_style, LV_PART_MAIN);
-    lv_obj_add_style(arc, &bg_style, LV_PART_INDICATOR);
+    lv_obj_add_style(disk_info.arc, &fg_style, LV_PART_MAIN);
+    lv_obj_add_style(disk_info.arc, &bg_style, LV_PART_INDICATOR);
+    lv_obj_remove_style(disk_info.arc, NULL, LV_PART_KNOB);
+    lv_obj_clear_flag(disk_info.arc, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(disk_info.arc, LV_ALIGN_BOTTOM_MID, 0, 10);
 
-    lv_obj_remove_style(arc, NULL, LV_PART_KNOB); /*Be sure the knob is not displayed*/
-    lv_obj_clear_flag(arc, LV_OBJ_FLAG_CLICKABLE);
+    disk_info.title = lv_label_create(disk_obj);
+    lv_label_set_text(disk_info.title, "Disk of /");
+    lv_obj_align(disk_info.title, LV_ALIGN_TOP_LEFT, -10,-12);
+    lv_obj_set_style_text_font(disk_info.title, &JetBrains_Momo_11, LV_PART_MAIN);
 
-    lv_obj_align(arc, LV_ALIGN_BOTTOM_MID, 0, 10);
+    disk_info.userate = lv_label_create(disk_obj);
+    lv_label_set_text(disk_info.userate, "");
+    lv_obj_align(disk_info.userate, LV_ALIGN_CENTER, 0, 8);
+    lv_obj_set_style_text_font(disk_info.userate, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_label_set_recolor(disk_info.userate, true);
 
-    lv_timer_create(disk_timer_task, 1000 * 1, (void *)arc);
+    static lv_style_t font_style;
+    lv_style_init(&font_style);
+    lv_style_set_text_color(&font_style, lv_color_white());
+    lv_obj_add_style(disk_info.title, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(disk_info.userate, &font_style, LV_PART_MAIN);
+
+    lv_timer_t *timer = lv_timer_create(disk_timer_task, 1000 * 1, (void *)&disk_info);
+    disk_timer_task(timer);
 }
 
 void cpu_temp_init(void)
 {
     static lv_obj_t *cpu_temp_obj;
     cpu_temp_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(cpu_temp_obj, 70, 90);
-    lv_obj_align(cpu_temp_obj, LV_ALIGN_BOTTOM_RIGHT, -75, 0);
+    lv_obj_set_size(cpu_temp_obj, 90, 95);
+    lv_obj_align(cpu_temp_obj, LV_ALIGN_BOTTOM_MID, -2, -20);
     lv_obj_clear_flag(cpu_temp_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_opa(cpu_temp_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_bg_color(cpu_temp_obj, lv_color_hex(0x222222), LV_PART_MAIN);
 
-    lv_obj_t *arc = lv_arc_create(cpu_temp_obj);
-    lv_arc_set_rotation(arc, 270);
-    lv_arc_set_angles(arc, 0, 360);
-    lv_arc_set_bg_angles(arc, 0, 360);
+    static temp_info_t temp_info;
+    memset(&temp_info, 0x00, sizeof(temp_info_t));
+    temp_info.arc = lv_arc_create(cpu_temp_obj);
+    lv_arc_set_rotation(temp_info.arc, 270);
+    lv_arc_set_angles(temp_info.arc, 0, 360);
+    lv_arc_set_bg_angles(temp_info.arc, 0, 360);
 
     static lv_style_t fg_style, bg_style;
     lv_style_init(&fg_style);
     lv_style_init(&bg_style);
 
-    lv_obj_set_size(arc, 55, 55);
+    lv_obj_set_size(temp_info.arc, 70, 70);
     lv_style_set_arc_color(&fg_style, lv_color_white());
     lv_style_set_arc_rounded(&fg_style, false);
-    lv_style_set_arc_width(&fg_style, 5);
+    lv_style_set_arc_width(&fg_style, 6);
 
     lv_style_set_arc_color(&bg_style, lv_color_hex(0x00fff3));
     lv_style_set_arc_rounded(&bg_style, false);
-    lv_style_set_arc_width(&bg_style, 5);
+    lv_style_set_arc_width(&bg_style, 6);
 
-    lv_obj_add_style(arc, &fg_style, LV_PART_MAIN);
-    lv_obj_add_style(arc, &bg_style, LV_PART_INDICATOR);
+    lv_obj_add_style(temp_info.arc, &fg_style, LV_PART_MAIN);
+    lv_obj_add_style(temp_info.arc, &bg_style, LV_PART_INDICATOR);
 
-    lv_obj_remove_style(arc, NULL, LV_PART_KNOB); /*Be sure the knob is not displayed*/
-    lv_obj_align(arc, LV_ALIGN_BOTTOM_MID, 0, 10);
+    temp_info.title = lv_label_create(cpu_temp_obj);
+    lv_label_set_text(temp_info.title, "Temperatrue");
+    lv_obj_align(temp_info.title, LV_ALIGN_TOP_LEFT, -10, -12);
+    lv_obj_set_style_text_font(temp_info.title, &JetBrains_Momo_11, LV_PART_MAIN);
 
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, arc);
-    lv_anim_set_exec_cb(&a, cpu_temp_info_cb);
-    lv_anim_set_time(&a, 3000);
-    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE); /*Just for the demo*/
-    lv_anim_set_repeat_delay(&a, 300);
-    lv_anim_set_values(&a, 0, 360);
-    lv_anim_start(&a);
+    temp_info.temperature = lv_label_create(cpu_temp_obj);
+    lv_label_set_text(temp_info.temperature, " ");
+    lv_obj_align(temp_info.temperature, LV_ALIGN_CENTER, 0, 5);
+    lv_obj_set_style_text_font(temp_info.temperature, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_label_set_recolor(temp_info.temperature, true);
+
+    static lv_style_t font_style;
+    lv_style_init(&font_style);
+    lv_style_set_text_color(&font_style, lv_color_white());
+    lv_obj_add_style(temp_info.title, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(temp_info.temperature, &font_style, LV_PART_MAIN);
+
+    lv_obj_remove_style(temp_info.arc, NULL, LV_PART_KNOB); /*Be sure the knob is not displayed*/
+    lv_obj_align(temp_info.arc, LV_ALIGN_BOTTOM_MID, 0, 10);
+
+    lv_timer_t *timer = lv_timer_create(temp_timer_task, 1000 * 1, (void *)&temp_info);
+    temp_timer_task(timer);
+}
+
+void proc_init(void)
+{
+    static lv_obj_t *task_obj;
+    task_obj = lv_obj_create(base_obj);
+    lv_obj_set_size(task_obj, 95, 95);
+    lv_obj_align(task_obj, LV_ALIGN_BOTTOM_RIGHT, 0, -20);
+    lv_obj_clear_flag(task_obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_border_opa(task_obj, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(task_obj, lv_color_hex(0x222222), LV_PART_MAIN);
+
+    static lv_obj_t *title = NULL;;
+    title = lv_label_create(task_obj);
+    lv_label_set_text(title, "Task");
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
+    lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
+
+    static lv_obj_t *proc_info = NULL;
+    proc_info = lv_label_create(task_obj);
+    lv_label_set_text(proc_info, " ");
+    lv_obj_align(proc_info, LV_ALIGN_CENTER, 0, 10);
+    lv_obj_set_style_text_font(proc_info, &JetBrains_Momo_12, LV_PART_MAIN);
+
+    static lv_style_t font_style;
+    lv_style_init(&font_style);
+    lv_style_set_text_color(&font_style, lv_color_white());
+    lv_style_set_text_line_space(&font_style, 8);
+    lv_obj_add_style(title, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(proc_info, &font_style, LV_PART_MAIN);
+
+    lv_timer_t *timer = lv_timer_create(proc_timer_task, 1000 * 1, (void *)proc_info);
+    proc_timer_task(timer);
 }
 
 void uptime_init(void)
 {
+    static lv_obj_t *other_obj;
+    other_obj = lv_obj_create(base_obj);
+    lv_obj_set_size(other_obj, 65, 20);
+    lv_obj_set_style_bg_color(other_obj, lv_color_hex(0x222222), LV_PART_MAIN);
+    lv_obj_set_style_border_opa(other_obj, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_align(other_obj, LV_ALIGN_BOTTOM_RIGHT, 0, 4);
+    lv_obj_clear_flag(other_obj, LV_OBJ_FLAG_SCROLLABLE);
+
     static lv_obj_t *text = NULL;
     text = lv_label_create(base_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_BOTTOM_LEFT, 0, 0);
-    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_align(text, LV_ALIGN_BOTTOM_RIGHT, -5,12);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_11, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
     lv_style_set_text_color(&font_style, lv_color_white());
     lv_obj_add_style(text, &font_style, LV_PART_MAIN);
 
-    lv_timer_create(cpu_uptime_task, 1000 * 1, (void *)text);
+    lv_timer_t *timer = lv_timer_create(cpu_uptime_task, 1000 * 30, (void *)text);
+    cpu_uptime_task(timer);
 }
 
 void ethernet_init(void)
 {
+    static lv_obj_t *ethernet_obj;
+    ethernet_obj = lv_obj_create(base_obj);
+    lv_obj_set_size(ethernet_obj, 150, 20);
+    lv_obj_set_style_bg_color(ethernet_obj, lv_color_hex(0x222222), LV_PART_MAIN);
+    lv_obj_set_style_border_opa(ethernet_obj, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_align(ethernet_obj, LV_ALIGN_BOTTOM_MID, 0, 4);
+    lv_obj_clear_flag(ethernet_obj, LV_OBJ_FLAG_SCROLLABLE);
+
     static lv_obj_t *text = NULL;
     text = lv_label_create(base_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_obj_set_style_text_font(text, &lv_font_montserrat_10, LV_PART_MAIN);
+    lv_obj_align(text, LV_ALIGN_BOTTOM_MID, 0, 12);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_label_set_recolor(text, true);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
     lv_style_set_text_color(&font_style, lv_color_white());
     lv_obj_add_style(text, &font_style, LV_PART_MAIN);
 
-    lv_timer_create(ether_timer_task, 1000 * 1, (void *)text);
+    lv_timer_t *timer = lv_timer_create(ether_timer_task, 1000 * 1, (void *)text);
+    ether_timer_task(timer);
+}
+
+
+void time_init(void)
+{
+    static lv_obj_t *other_obj;
+    other_obj = lv_obj_create(base_obj);
+    lv_obj_set_size(other_obj, 65, 20);
+    lv_obj_set_style_bg_color(other_obj, lv_color_hex(0x222222), LV_PART_MAIN);
+    lv_obj_set_style_border_opa(other_obj, LV_OPA_TRANSP, LV_PART_MAIN);
+    lv_obj_align(other_obj, LV_ALIGN_BOTTOM_LEFT, 0, 4);
+    lv_obj_clear_flag(other_obj, LV_OBJ_FLAG_SCROLLABLE);
+    static lv_obj_t *text = NULL;
+
+    text = lv_label_create(base_obj);
+    lv_label_set_text(text, "");
+    lv_obj_align(text, LV_ALIGN_BOTTOM_LEFT, 5, 0);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
+
+    static lv_style_t font_style;
+    lv_style_init(&font_style);
+    lv_style_set_text_color(&font_style, lv_color_white());
+    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+
+    lv_timer_t *timer = lv_timer_create(time_timer_task, 1000 * 1, (void *)text);
+    time_timer_task(timer);
 }
