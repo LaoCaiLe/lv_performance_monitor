@@ -90,20 +90,20 @@ static void draw_event_cb(lv_event_t *e)
 
 static void cpu_timer_task(lv_timer_t *arg)
 {
-    char buf[64] = {0};
+    char buffer[64] = {0};
     uint16_t cpu_rate;
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
 
     get_cpu_load(&cpu_rate);
 
-    snprintf(buf, sizeof(buf), "%d%%", cpu_rate);
-    lv_label_set_text(text, buf);
+    snprintf(buffer, sizeof(buffer), "%d%%", cpu_rate);
+    lv_label_set_text(text, buffer);
     lv_chart_set_next_value(chart_cpu, ser_cpu, cpu_rate);
 }
 static void mem_timer_task(lv_timer_t *arg)
 {
-    char buf[64] = {0};
+    char buffer[64] = {0};
     uint16_t mem_rate;
     uint32_t use_mem_kb, total_mem_kb;
     lv_timer_t *timer = (lv_timer_t *)arg;
@@ -112,17 +112,17 @@ static void mem_timer_task(lv_timer_t *arg)
     get_mem_load(&use_mem_kb, &total_mem_kb, &mem_rate);
 
     if(total_mem_kb > (1024 * 1024))
-        snprintf(buf, sizeof(buf), "%.1fGB/%.1fGB", use_mem_kb / 1024.0 / 1024.0, total_mem_kb / 1024.0 / 1024.0);
+        snprintf(buffer, sizeof(buffer), "%.1fGB/%.1fGB", use_mem_kb / 1024.0 / 1024.0, total_mem_kb / 1024.0 / 1024.0);
     else
-        snprintf(buf, sizeof(buf), "%.0fMB/%.0fMB", use_mem_kb / 1024.0, total_mem_kb / 1024.0);
+        snprintf(buffer, sizeof(buffer), "%.0fMB/%.0fMB", use_mem_kb / 1024.0, total_mem_kb / 1024.0);
 
-    lv_label_set_text(text, buf);
+    lv_label_set_text(text, buffer);
     lv_chart_set_next_value(chart_mem, ser_mem, mem_rate);
 }
 
 static void cpu_uptime_task(lv_timer_t *arg)
 {
-    char buf[64] = {0};
+    char buffer[64] = {0};
     uint64_t uptime_sec;
     uint32_t uptime_min;
     lv_timer_t *timer = (lv_timer_t *)arg;
@@ -132,18 +132,19 @@ static void cpu_uptime_task(lv_timer_t *arg)
     uptime_min = uptime_sec / 60;
 
     if (uptime_min > 1440)
-        snprintf(buf, sizeof(buf), "%d days\n", uptime_min / 1440);
+        snprintf(buffer, sizeof(buffer), "%d days\n", uptime_min / 1440);
     else if (uptime_min > 60)
-        snprintf(buf, sizeof(buf), "%d hours\n", uptime_min / 60);
+        snprintf(buffer, sizeof(buffer), "%d hours\n", uptime_min / 60);
     else
-        snprintf(buf, sizeof(buf), "%d min\n", uptime_min);
+        snprintf(buffer, sizeof(buffer), "%d min\n", uptime_min);
 
-    lv_label_set_text(text, buf);
+    lv_label_set_text(text, buffer);
 }
 
 static void ether_timer_task(lv_timer_t *arg)
 {
-    char buf[64] = {0};
+    char buffer_upload[64] = {0};
+    char buffer_download[64] = {0};
     uint32_t upload_speed_bps, download_speed_bps;
     float upload_speed_mps, download_speed_mps;
     lv_timer_t *timer = (lv_timer_t *)arg;
@@ -153,17 +154,23 @@ static void ether_timer_task(lv_timer_t *arg)
 
     upload_speed_mps = upload_speed_bps / 1000.0 / 1000.0;
     download_speed_mps = download_speed_bps / 1000.0 / 1000.0;
-    if(upload_speed_mps >= 10.0 || download_speed_mps >= 10.0)
-        snprintf(buf, sizeof(buf), "#009080 "LV_SYMBOL_UPLOAD "# %3dMb/s " "#005080 "LV_SYMBOL_DOWNLOAD "# %3dMb/s\n", (int)upload_speed_mps, (int)download_speed_mps);
+    if(upload_speed_mps >= 10.0 )
+        snprintf(buffer_upload, sizeof(buffer_upload), "#009080 "LV_SYMBOL_UPLOAD "# %-3dMb/s ", (int)upload_speed_mps);
     else
-        snprintf(buf, sizeof(buf), "#009080 "LV_SYMBOL_UPLOAD "# %.1fMb/s " "#005080 "LV_SYMBOL_DOWNLOAD "# %.1fMb/s\n", upload_speed_mps, download_speed_mps);
+        snprintf(buffer_upload, sizeof(buffer_upload), "#009080 "LV_SYMBOL_UPLOAD "# %.1fMb/s ", upload_speed_mps);
 
-    lv_label_set_text(text, buf);
+    if(download_speed_mps >= 10.0)
+        snprintf(buffer_download, sizeof(buffer_download), "#005080 "LV_SYMBOL_DOWNLOAD "# %-3dMb/s", (int)download_speed_mps);
+    else
+        snprintf(buffer_download, sizeof(buffer_download), "#005080 "LV_SYMBOL_DOWNLOAD "# %.1fMb/s", download_speed_mps);
+
+
+    lv_label_set_text_fmt(text, "%s%s", buffer_upload, buffer_download);
 }
 
 static void disk_timer_task(lv_timer_t *arg)
 {
-    char buf[64] = {0};
+    char buffer[64] = {0};
     uint32_t disk_all_kb, disk_use_kb, disk_valid_kb;
     uint16_t disk_use_rate;
     lv_timer_t *timer = (lv_timer_t *)arg;
@@ -173,12 +180,12 @@ static void disk_timer_task(lv_timer_t *arg)
 
     lv_arc_set_value(disk_info->arc, disk_use_rate);
 
-    snprintf(buf, sizeof(buf), "#E91E63 %.1fGB#\n%.1fGB",
+    snprintf(buffer, sizeof(buffer), "#E91E63 %.1fGB#\n%.1fGB",
              disk_use_kb / 1024.0 / 1024.0,
              disk_valid_kb / 1024.0 / 1024.0);
-    lv_label_set_text(disk_info->userate, buf );
-    snprintf(buf, sizeof(buf), "Disk     %d%%", disk_use_rate);
-    lv_label_set_text(disk_info->title, buf);
+    lv_label_set_text(disk_info->userate, buffer );
+    snprintf(buffer, sizeof(buffer), "Disk     %d%%", disk_use_rate);
+    lv_label_set_text(disk_info->title, buffer);
 }
 
 static void temp_timer_task(lv_timer_t *arg)
@@ -202,19 +209,19 @@ static void time_timer_task(lv_timer_t *arg)
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
 
-    char buf[64];
+    char buffer[64];
     get_time_string(&hour, &min, &sec);
     if(colon)
-        snprintf(buf, sizeof(buf), "%02d:%02d:%02d", hour, min, sec);
+        snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hour, min, sec);
     else
-        snprintf(buf, sizeof(buf), "%02d#E91E63 :#%02d#ff4444 :#%02d", hour, min, sec);
+        snprintf(buffer, sizeof(buffer), "%02d#E91E63 :#%02d#ff4444 :#%02d", hour, min, sec);
     colon=!colon;
-    lv_label_set_text(text, buf);
+    lv_label_set_text(text, buffer);
 }
 
 static void proc_timer_task(lv_timer_t *arg)
 {
-    char buf[128];
+    char buffer[128];
     uint32_t num_process=0, num_thread=0, num_zombie=0;
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
@@ -530,7 +537,7 @@ void ethernet_init(void)
     static lv_obj_t *text = NULL;
     text = lv_label_create(base_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_BOTTOM_MID, 0, 12);
+    lv_obj_align(text, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_label_set_recolor(text, true);
 
