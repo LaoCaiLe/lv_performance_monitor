@@ -18,6 +18,7 @@ typedef struct _disk_info_t{
     lv_obj_t *arc;
     lv_obj_t *title;
     lv_obj_t *userate;
+    lv_obj_t *useinfo;
 } disk_info_t;
 
 typedef struct _temp_info_t{
@@ -183,9 +184,8 @@ static void disk_timer_task(lv_timer_t *arg)
     snprintf(buffer, sizeof(buffer), "#E91E63 %.1fGB#\n%.1fGB",
              disk_use_kb / 1024.0 / 1024.0,
              disk_valid_kb / 1024.0 / 1024.0);
-    lv_label_set_text(disk_info->userate, buffer );
-    snprintf(buffer, sizeof(buffer), "Disk     %d%%", disk_use_rate);
-    lv_label_set_text(disk_info->title, buffer);
+    lv_label_set_text(disk_info->useinfo, buffer );
+    lv_label_set_text_fmt(disk_info->userate, "%d%%", disk_use_rate);
 }
 
 static void temp_timer_task(lv_timer_t *arg)
@@ -265,14 +265,14 @@ void cpu_init(void)
     lv_obj_t *title = lv_label_create(cpu_obj);
     lv_label_set_text(title, "CPU");
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
 
     static lv_obj_t *text = NULL;
 
     text = lv_label_create(cpu_obj);
     lv_label_set_text(text, " ");
     lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
@@ -313,13 +313,13 @@ void mem_init(void)
     lv_obj_t *title = lv_label_create(mem_obj);
     lv_label_set_text(title, "MEM");
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
 
     static lv_obj_t *text = NULL;
     text = lv_label_create(mem_obj);
     lv_label_set_text(text, " ");
     lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 12, -12);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
@@ -385,13 +385,20 @@ void disk_init(void)
     lv_obj_align(disk_info.arc, LV_ALIGN_BOTTOM_MID, 0, 10);
 
     disk_info.title = lv_label_create(disk_obj);
-    lv_label_set_text(disk_info.title, "Disk of /");
+    lv_label_set_text(disk_info.title, "Disk");
     lv_obj_align(disk_info.title, LV_ALIGN_TOP_LEFT, -10,-12);
-    lv_obj_set_style_text_font(disk_info.title, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_obj_set_style_text_font(disk_info.title, &JetBrains_Momo_12, LV_PART_MAIN);
+
+    disk_info.useinfo = lv_label_create(disk_obj);
+    lv_label_set_text(disk_info.useinfo, "");
+    lv_obj_align(disk_info.useinfo, LV_ALIGN_CENTER, 0, 8);
+    lv_obj_set_style_text_font(disk_info.useinfo, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_set_style_text_align(disk_info.useinfo, LV_TEXT_ALIGN_CENTER, 0);
+    lv_label_set_recolor(disk_info.useinfo, true);
 
     disk_info.userate = lv_label_create(disk_obj);
     lv_label_set_text(disk_info.userate, "");
-    lv_obj_align(disk_info.userate, LV_ALIGN_CENTER, 0, 8);
+    lv_obj_align(disk_info.userate, LV_ALIGN_TOP_RIGHT, 10, -12);
     lv_obj_set_style_text_font(disk_info.userate, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_obj_set_style_text_align(disk_info.userate, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_recolor(disk_info.userate, true);
@@ -400,6 +407,7 @@ void disk_init(void)
     lv_style_init(&font_style);
     lv_style_set_text_color(&font_style, lv_color_white());
     lv_obj_add_style(disk_info.title, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(disk_info.useinfo, &font_style, LV_PART_MAIN);
     lv_obj_add_style(disk_info.userate, &font_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(disk_timer_task, 1000 * 1, (void *)&disk_info);
@@ -442,7 +450,7 @@ void cpu_temp_init(void)
     temp_info.title = lv_label_create(cpu_temp_obj);
     lv_label_set_text(temp_info.title, "Thermal");
     lv_obj_align(temp_info.title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(temp_info.title, &JetBrains_Momo_11, LV_PART_MAIN);
+    lv_obj_set_style_text_font(temp_info.title, &JetBrains_Momo_12, LV_PART_MAIN);
 
     temp_info.temperature = lv_label_create(cpu_temp_obj);
     lv_label_set_text(temp_info.temperature, " ");
