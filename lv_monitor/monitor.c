@@ -8,6 +8,7 @@ static lv_obj_t *chart_cpu;
 static lv_obj_t *chart_mem;
 static lv_chart_series_t *ser_cpu;
 static lv_chart_series_t *ser_mem;
+static lv_style_t default_style;
 
 LV_FONT_DECLARE(JetBrains_Momo_10)
 LV_FONT_DECLARE(JetBrains_Momo_11)
@@ -146,7 +147,7 @@ static void ether_timer_task(lv_timer_t *arg)
 {
     char buffer_upload[64] = {0};
     char buffer_download[64] = {0};
-    uint32_t upload_speed_bps, download_speed_bps;
+    uint64_t upload_speed_bps, download_speed_bps;
     float upload_speed_mps, download_speed_mps;
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
@@ -249,6 +250,9 @@ void base_init(void)
     lv_obj_set_size(base_obj, LV_HOR_RES, LV_VER_RES);
     lv_obj_clear_flag(base_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_bg_color(base_obj, lv_color_hex(0x111111), LV_PART_MAIN);
+
+    lv_style_init(&default_style);
+    lv_style_set_text_color(&default_style, lv_color_white());
 }
 
 void cpu_init(void)
@@ -266,19 +270,14 @@ void cpu_init(void)
     lv_label_set_text(title, "CPU");
     lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
     lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_add_style(title, &default_style, LV_PART_MAIN);
 
     static lv_obj_t *text = NULL;
-
     text = lv_label_create(cpu_obj);
     lv_label_set_text(text, " ");
     lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
-
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(title, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     chart_cpu = lv_chart_create(cpu_obj);
     lv_obj_set_size(chart_cpu, 130, 80);
@@ -321,11 +320,8 @@ void mem_init(void)
     lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 12, -12);
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
 
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(title, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(title, &default_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     chart_mem = lv_chart_create(mem_obj);
     lv_obj_set_size(chart_mem, 130, 80);
@@ -403,12 +399,9 @@ void disk_init(void)
     lv_obj_set_style_text_align(disk_info.userate, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_recolor(disk_info.userate, true);
 
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(disk_info.title, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(disk_info.useinfo, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(disk_info.userate, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(disk_info.title, &default_style, LV_PART_MAIN);
+    lv_obj_add_style(disk_info.useinfo, &default_style, LV_PART_MAIN);
+    lv_obj_add_style(disk_info.userate, &default_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(disk_timer_task, 1000 * 10, (void *)&disk_info);
     disk_timer_task(timer);
@@ -451,18 +444,14 @@ void cpu_temp_init(void)
     lv_label_set_text(temp_info.title, "Thermal");
     lv_obj_align(temp_info.title, LV_ALIGN_TOP_LEFT, -10, -12);
     lv_obj_set_style_text_font(temp_info.title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_add_style(temp_info.title, &default_style, LV_PART_MAIN);
 
     temp_info.temperature = lv_label_create(cpu_temp_obj);
     lv_label_set_text(temp_info.temperature, " ");
     lv_obj_align(temp_info.temperature, LV_ALIGN_CENTER, 0, 5);
     lv_obj_set_style_text_font(temp_info.temperature, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_label_set_recolor(temp_info.temperature, true);
-
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(temp_info.title, &font_style, LV_PART_MAIN);
-    lv_obj_add_style(temp_info.temperature, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(temp_info.temperature, &default_style, LV_PART_MAIN);
 
     lv_obj_remove_style(temp_info.arc, NULL, LV_PART_KNOB); /*Be sure the knob is not displayed*/
     lv_obj_align(temp_info.arc, LV_ALIGN_BOTTOM_MID, 0, 10);
@@ -522,11 +511,7 @@ void uptime_init(void)
     lv_obj_align(text, LV_ALIGN_BOTTOM_RIGHT, -3, 12);
     lv_obj_set_style_text_align(text, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
-
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(cpu_uptime_task, 1000 * 30, (void *)text);
     cpu_uptime_task(timer);
@@ -548,11 +533,7 @@ void ethernet_init(void)
     lv_obj_align(text, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_label_set_recolor(text, true);
-
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(ether_timer_task, 1000 * 1, (void *)text);
     ether_timer_task(timer);
@@ -575,11 +556,7 @@ void time_init(void)
     lv_obj_align(text, LV_ALIGN_BOTTOM_LEFT, 5, 0);
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_label_set_recolor(text, true);
-
-    static lv_style_t font_style;
-    lv_style_init(&font_style);
-    lv_style_set_text_color(&font_style, lv_color_white());
-    lv_obj_add_style(text, &font_style, LV_PART_MAIN);
+    lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(time_timer_task, 1000 * 1, (void *)text);
     time_timer_task(timer);
