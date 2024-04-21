@@ -117,15 +117,15 @@ int get_disk_use(uint32_t *disk_all_kb, uint32_t *disk_use_kb, uint32_t *disk_va
     return ret_ok;
 }
 
-int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
+int get_ethernet_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps)
 {
     char line[1024] = {0};
     char file_path[256] = {0};
     FILE *file = NULL;
-    uint32_t curr_upload_speed = 0;
-    uint32_t curr_download_speed = 0;
-    static uint32_t prev_upload_speed = 0;
-    static uint32_t prev_download_speed = 0;
+    uint64_t curr_upload_speed = 0;
+    uint64_t curr_download_speed = 0;
+    static uint64_t prev_upload_speed = 0;
+    static uint64_t prev_download_speed = 0;
     static bool is_first = true;
 
     snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/rx_bytes", ETHER_DEVICE);
@@ -136,9 +136,10 @@ int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
         return ret_fail;
     }
     fgets(line, sizeof(line), file);
-    curr_download_speed = atoi(line);
+    curr_download_speed = atoll(line);
     fclose(file);
 
+    memset(line, 0x00, sizeof(line));
     snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/tx_bytes", ETHER_DEVICE);
     file = fopen(file_path, "r");
     if (file == NULL)
@@ -147,7 +148,7 @@ int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
         return ret_fail;
     }
     fgets(line, sizeof(line), file);
-    curr_upload_speed = atoi(line);
+    curr_upload_speed = atoll(line);
     fclose(file);
 
     *upload_speed_bps = (curr_upload_speed - prev_upload_speed) * 8;
@@ -162,7 +163,8 @@ int get_ethernet_speed(uint32_t *upload_speed_bps, uint32_t *download_speed_bps)
         *download_speed_bps = 0;
         is_first = false;
     }
-    LV_LOG_INFO("download_speed_bps[%u], upload_speed_bps[%u]\n", *download_speed_bps, *upload_speed_bps);
+    LV_LOG_INFO("curr_download_speed[%llu], curr_upload_speed[%llu]\n", curr_download_speed, curr_upload_speed);
+    LV_LOG_INFO("download_speed_bps[%llu], upload_speed_bps[%llu]\n", *download_speed_bps, *upload_speed_bps);
 
     return ret_ok;
 }
@@ -285,4 +287,4 @@ int get_time_string(uint16_t *hours, uint16_t *minutes, uint16_t *seconds)
     LV_LOG_INFO("Current time: %d:%d:%d\n", *hours, *minutes, *seconds);
     
     return ret_ok;
-}
+} 
