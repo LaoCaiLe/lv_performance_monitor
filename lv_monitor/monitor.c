@@ -197,7 +197,7 @@ static void temp_timer_task(lv_timer_t *arg)
         temp = lv_rand(30, 50);
     lv_arc_set_value(temp_info->arc, temp);
     lv_arc_set_value(temp_info->arc, temp);
-    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00fff3 %d#¡ãC", temp);
+    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00fff3 %d#'C", temp);
 }
 
 static void time_timer_task(lv_timer_t *arg)
@@ -410,7 +410,7 @@ void disk_init(void)
     lv_obj_add_style(disk_info.useinfo, &font_style, LV_PART_MAIN);
     lv_obj_add_style(disk_info.userate, &font_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(disk_timer_task, 1000 * 1, (void *)&disk_info);
+    lv_timer_t *timer = lv_timer_create(disk_timer_task, 1000 * 10, (void *)&disk_info);
     disk_timer_task(timer);
 }
 
@@ -467,7 +467,7 @@ void cpu_temp_init(void)
     lv_obj_remove_style(temp_info.arc, NULL, LV_PART_KNOB); /*Be sure the knob is not displayed*/
     lv_obj_align(temp_info.arc, LV_ALIGN_BOTTOM_MID, 0, 10);
 
-    lv_timer_t *timer = lv_timer_create(temp_timer_task, 1000 * 1, (void *)&temp_info);
+    lv_timer_t *timer = lv_timer_create(temp_timer_task, 1000 * 3, (void *)&temp_info);
     temp_timer_task(timer);
 }
 
@@ -501,7 +501,7 @@ void proc_init(void)
     lv_obj_add_style(title, &font_style, LV_PART_MAIN);
     lv_obj_add_style(proc_info, &font_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(proc_timer_task, 1000 * 1, (void *)proc_info);
+    lv_timer_t *timer = lv_timer_create(proc_timer_task, 1000 * 3, (void *)proc_info);
     proc_timer_task(timer);
 }
 
