@@ -20,10 +20,10 @@ enum Result
 int get_cpu_load(uint16_t *cpu_load);
 int get_mem_load(uint32_t *use_mem_kb, uint32_t *total_mem_kb, uint16_t *mem_load);
 int get_disk_use(uint32_t *disk_all_kb, uint32_t *disk_use_kb, uint32_t *disk_valid_kb, uint16_t *disk_use_rate);
-int get_ethernet_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps);
+int get_network_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps);
 int get_cpu_uptime(uint64_t *uptime_sec);
 int get_cpu_temperature(uint32_t *temp);
 int get_task_num(uint32_t *num_processes, uint32_t *num_threads, uint32_t *num_zombies);
-int get_time_string(uint16_t *hours, uint16_t *minutes, uint16_t *seconds);
+int get_current_time(uint16_t *hours, uint16_t *minutes, uint16_t *seconds);
 
 #endif

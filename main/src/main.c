@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     lv_init();
     hal_init();
 
-    monitor_show();
+    lv_monitor_show();
 
     while (1)
     {

@@ -90,7 +90,7 @@ static void draw_event_cb(lv_event_t *e)
     }
 }
 
-static void cpu_timer_task(lv_timer_t *arg)
+static void task_get_cpu_load(lv_timer_t *arg)
 {
     char buffer[64] = {0};
     uint16_t cpu_rate;
@@ -103,7 +103,7 @@ static void cpu_timer_task(lv_timer_t *arg)
     lv_label_set_text(text, buffer);
     lv_chart_set_next_value(chart_cpu, ser_cpu, cpu_rate);
 }
-static void mem_timer_task(lv_timer_t *arg)
+static void task_get_mem_load(lv_timer_t *arg)
 {
     char buffer[64] = {0};
     uint16_t mem_rate;
@@ -122,7 +122,7 @@ static void mem_timer_task(lv_timer_t *arg)
     lv_chart_set_next_value(chart_mem, ser_mem, mem_rate);
 }
 
-static void cpu_uptime_task(lv_timer_t *arg)
+static void task_get_uptime(lv_timer_t *arg)
 {
     char buffer[64] = {0};
     uint64_t uptime_sec;
@@ -143,7 +143,7 @@ static void cpu_uptime_task(lv_timer_t *arg)
     lv_label_set_text(text, buffer);
 }
 
-static void ether_timer_task(lv_timer_t *arg)
+static void task_get_net_speed(lv_timer_t *arg)
 {
     char buffer_upload[64] = {0};
     char buffer_download[64] = {0};
@@ -152,7 +152,7 @@ static void ether_timer_task(lv_timer_t *arg)
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
 
-    get_ethernet_speed(&upload_speed_bps, &download_speed_bps);
+    get_network_speed(&upload_speed_bps, &download_speed_bps);
 
     upload_speed_mps = upload_speed_bps / 1000.0 / 1000.0;
     download_speed_mps = download_speed_bps / 1000.0 / 1000.0;
@@ -170,7 +170,7 @@ static void ether_timer_task(lv_timer_t *arg)
     lv_label_set_text_fmt(text, "%s%s", buffer_upload, buffer_download);
 }
 
-static void disk_timer_task(lv_timer_t *arg)
+static void task_get_disk_load(lv_timer_t *arg)
 {
     char buffer[64] = {0};
     uint32_t disk_all_kb, disk_use_kb, disk_valid_kb;
@@ -189,7 +189,7 @@ static void disk_timer_task(lv_timer_t *arg)
     lv_label_set_text_fmt(disk_info->userate, "%d%%", disk_use_rate);
 }
 
-static void temp_timer_task(lv_timer_t *arg)
+static void task_get_temperature(lv_timer_t *arg)
 {
     uint32_t temp = 0;
     lv_timer_t *timer = (lv_timer_t *)arg;
@@ -201,7 +201,7 @@ static void temp_timer_task(lv_timer_t *arg)
     lv_label_set_text_fmt(temp_info->temperature, "CPU:#00fff3 %d#'C", temp);
 }
 
-static void time_timer_task(lv_timer_t *arg)
+static void task_get_time(lv_timer_t *arg)
 {
     uint16_t hour = 0;
     uint16_t min = 0;
@@ -211,7 +211,7 @@ static void time_timer_task(lv_timer_t *arg)
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
 
     char buffer[64];
-    get_time_string(&hour, &min, &sec);
+    get_current_time(&hour, &min, &sec);
     if(colon)
         snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d", hour, min, sec);
     else
@@ -220,7 +220,7 @@ static void time_timer_task(lv_timer_t *arg)
     lv_label_set_text(text, buffer);
 }
 
-static void proc_timer_task(lv_timer_t *arg)
+static void task_count_process(lv_timer_t *arg)
 {
     char buffer[128];
     uint32_t num_process=0, num_thread=0, num_zombie=0;
@@ -231,20 +231,20 @@ static void proc_timer_task(lv_timer_t *arg)
     lv_label_set_text_fmt(text, "#0060f0 Process:#%d\n#00f060 Threads:#%d\n#aaaaaa Zombies:#%d", num_process, num_thread, num_zombie);
 }
 
-void monitor_show(void)
+void lv_monitor_show(void)
 {
-    base_init();
-    cpu_init();
-    mem_init();
-    disk_init();
-    cpu_temp_init();
-    proc_init();
-    time_init();
-    uptime_init();
-    ethernet_init();
+    lv_monitor_base_init();
+    lv_monitor_cpu_init();
+    lv_monitor_mem_init();
+    lv_monitor_disk_init();
+    lv_monitor_thermal_init();
+    lv_monitor_task_counter_init();
+    lv_monitor_time_init();
+    lv_monitor_uptime_init();
+    lv_monitor_network_init();
 }
 
-void base_init(void)
+void lv_monitor_base_init(void)
 {
     base_obj = lv_obj_create(lv_scr_act());
     lv_obj_set_size(base_obj, LV_HOR_RES, LV_VER_RES);
@@ -255,7 +255,7 @@ void base_init(void)
     lv_style_set_text_color(&default_style, lv_color_white());
 }
 
-void cpu_init(void)
+void lv_monitor_cpu_init(void)
 {
     static lv_obj_t *cpu_obj;
 
@@ -295,11 +295,11 @@ void cpu_init(void)
     lv_obj_set_style_size(chart_cpu, 0, LV_PART_INDICATOR);
 
     ser_cpu = lv_chart_add_series(chart_cpu, lv_palette_main(LV_PALETTE_BLUE), LV_CHART_AXIS_PRIMARY_Y);
-    lv_timer_t *timer = lv_timer_create(cpu_timer_task, 1000, (void *)text);
-    cpu_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_cpu_load, 1000, (void *)text);
+    task_get_cpu_load(timer);
 }
 
-void mem_init(void)
+void lv_monitor_mem_init(void)
 {
     static lv_obj_t *mem_obj;
     mem_obj = lv_obj_create(base_obj);
@@ -339,12 +339,12 @@ void mem_init(void)
     lv_obj_set_style_size(chart_mem, 0, LV_PART_INDICATOR);
 
     ser_mem = lv_chart_add_series(chart_mem, lv_palette_main(LV_PALETTE_PINK), LV_CHART_AXIS_PRIMARY_Y);
-    lv_timer_t *timer = lv_timer_create(mem_timer_task, 1000, (void*)text);
-    mem_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_mem_load, 1000, (void*)text);
+    task_get_mem_load(timer);
 
 }
 
-void disk_init(void)
+void lv_monitor_disk_init(void)
 {
     static lv_obj_t *disk_obj;
     disk_obj = lv_obj_create(base_obj);
@@ -403,11 +403,11 @@ void disk_init(void)
     lv_obj_add_style(disk_info.useinfo, &default_style, LV_PART_MAIN);
     lv_obj_add_style(disk_info.userate, &default_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(disk_timer_task, 1000 * 10, (void *)&disk_info);
-    disk_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_disk_load, 1000 * 10, (void *)&disk_info);
+    task_get_disk_load(timer);
 }
 
-void cpu_temp_init(void)
+void lv_monitor_thermal_init(void)
 {
     static lv_obj_t *cpu_temp_obj;
     cpu_temp_obj = lv_obj_create(base_obj);
@@ -456,11 +456,11 @@ void cpu_temp_init(void)
     lv_obj_remove_style(temp_info.arc, NULL, LV_PART_KNOB); /*Be sure the knob is not displayed*/
     lv_obj_align(temp_info.arc, LV_ALIGN_BOTTOM_MID, 0, 10);
 
-    lv_timer_t *timer = lv_timer_create(temp_timer_task, 1000 * 3, (void *)&temp_info);
-    temp_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_temperature, 1000 * 3, (void *)&temp_info);
+    task_get_temperature(timer);
 }
 
-void proc_init(void)
+void lv_monitor_task_counter_init(void)
 {
     static lv_obj_t *task_obj;
     task_obj = lv_obj_create(base_obj);
@@ -490,11 +490,11 @@ void proc_init(void)
     lv_obj_add_style(title, &font_style, LV_PART_MAIN);
     lv_obj_add_style(proc_info, &font_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(proc_timer_task, 1000 * 3, (void *)proc_info);
-    proc_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_count_process, 1000 * 3, (void *)proc_info);
+    task_count_process(timer);
 }
 
-void uptime_init(void)
+void lv_monitor_uptime_init(void)
 {
     static lv_obj_t *other_obj;
     other_obj = lv_obj_create(base_obj);
@@ -513,11 +513,11 @@ void uptime_init(void)
     lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(cpu_uptime_task, 1000 * 30, (void *)text);
-    cpu_uptime_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_uptime, 1000 * 30, (void *)text);
+    task_get_uptime(timer);
 }
 
-void ethernet_init(void)
+void lv_monitor_network_init(void)
 {
     static lv_obj_t *ethernet_obj;
     ethernet_obj = lv_obj_create(base_obj);
@@ -535,12 +535,12 @@ void ethernet_init(void)
     lv_label_set_recolor(text, true);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(ether_timer_task, 1000 * 1, (void *)text);
-    ether_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_net_speed, 1000 * 1, (void *)text);
+    task_get_net_speed(timer);
 }
 
 
-void time_init(void)
+void lv_monitor_time_init(void)
 {
     static lv_obj_t *other_obj;
     other_obj = lv_obj_create(base_obj);
@@ -558,6 +558,6 @@ void time_init(void)
     lv_label_set_recolor(text, true);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(time_timer_task, 1000 * 1, (void *)text);
-    time_timer_task(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_time, 1000 * 1, (void *)text);
+    task_get_time(timer);
 }

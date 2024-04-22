@@ -117,7 +117,7 @@ int get_disk_use(uint32_t *disk_all_kb, uint32_t *disk_use_kb, uint32_t *disk_va
     return ret_ok;
 }
 
-int get_ethernet_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps)
+int get_network_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps)
 {
     char line[1024] = {0};
     char file_path[256] = {0};
@@ -268,7 +268,7 @@ int get_task_num(uint32_t *num_processes, uint32_t *num_threads, uint32_t *num_z
     return ret_ok;
 }
 
-int get_time_string(uint16_t *hours, uint16_t *minutes, uint16_t *seconds)
+int get_current_time(uint16_t *hours, uint16_t *minutes, uint16_t *seconds)
 {
     time_t current_time;
     struct tm * time_info;
