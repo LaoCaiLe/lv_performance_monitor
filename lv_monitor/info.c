@@ -128,6 +128,22 @@ int get_network_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps)
     static uint64_t prev_download_speed = 0;
     static bool is_first = true;
 
+    snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/operstate", ETHER_DEVICE);
+    file = fopen(file_path, "r");
+    if (file == NULL)
+    {
+        LV_LOG_ERROR("can not open file %s!\n", file_path);
+        return ret_fail;
+    }
+    fgets(line, sizeof(line), file);
+    if(0 != strcmp(line, "up\n")) {
+        LV_LOG_ERROR("%s is not connect!\n", ETHER_DEVICE);
+        fclose(file);
+        return ret_fail;
+    }
+    fclose(file);
+
+    memset(line, 0x00, sizeof(line));
     snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/rx_bytes", ETHER_DEVICE);
     file = fopen(file_path, "r");
     if (file == NULL)

@@ -151,11 +151,22 @@ static void task_get_net_speed(lv_timer_t *arg)
     float upload_speed_mps, download_speed_mps;
     lv_timer_t *timer = (lv_timer_t *)arg;
     lv_obj_t *text = (lv_obj_t *)timer->user_data;
+    lv_text_decor_t text_decor;
 
-    get_network_speed(&upload_speed_bps, &download_speed_bps);
+    text_decor = lv_obj_get_style_text_decor(text, LV_PART_MAIN);
+    if (ret_ok != get_network_speed(&upload_speed_bps, &download_speed_bps))
+    {
+        if(!(text_decor & LV_TEXT_DECOR_STRIKETHROUGH))
+            lv_obj_set_style_text_decor(text, LV_TEXT_DECOR_STRIKETHROUGH, LV_PART_MAIN);
+        upload_speed_mps = 0;
+        download_speed_mps = 0;
+    } else {
+        if(!(text_decor & LV_TEXT_DECOR_NONE))
+            lv_obj_set_style_text_decor(text, LV_TEXT_DECOR_NONE, LV_PART_MAIN);
+        upload_speed_mps = upload_speed_bps / 1000.0 / 1000.0;
+        download_speed_mps = download_speed_bps / 1000.0 / 1000.0;
+    }
 
-    upload_speed_mps = upload_speed_bps / 1000.0 / 1000.0;
-    download_speed_mps = download_speed_bps / 1000.0 / 1000.0;
     if(upload_speed_mps >= 10.0 )
         snprintf(buffer_upload, sizeof(buffer_upload), "#009080 "LV_SYMBOL_UPLOAD "# %-3dMb/s ", (int)upload_speed_mps);
     else
@@ -194,8 +205,19 @@ static void task_get_temperature(lv_timer_t *arg)
     uint32_t temp = 0;
     lv_timer_t *timer = (lv_timer_t *)arg;
     temp_info_t *temp_info = (temp_info_t *)timer->user_data;
-    if (ret_ok !=get_cpu_temperature(&temp))
+    lv_text_decor_t text_decor;
+    text_decor = lv_obj_get_style_text_decor(temp_info->temperature, LV_PART_MAIN);
+    if (ret_ok != get_cpu_temperature(&temp))
+    {
+        if(!(text_decor & LV_TEXT_DECOR_STRIKETHROUGH))
+            lv_obj_set_style_text_decor(temp_info->temperature, LV_TEXT_DECOR_STRIKETHROUGH, LV_PART_MAIN);
         temp = lv_rand(30, 50);
+    }
+    else
+    {
+        if(!(text_decor & LV_TEXT_DECOR_NONE))
+            lv_obj_set_style_text_decor(temp_info->temperature, LV_TEXT_DECOR_NONE, LV_PART_MAIN);
+    }
     lv_arc_set_value(temp_info->arc, temp);
     lv_arc_set_value(temp_info->arc, temp);
     lv_label_set_text_fmt(temp_info->temperature, "CPU:#00fff3 %d#'C", temp);
