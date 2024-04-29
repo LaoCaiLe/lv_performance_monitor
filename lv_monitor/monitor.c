@@ -1,7 +1,6 @@
 #include "monitor.h"
 #include <stdio.h>
 #include "info.h"
-#define OBJ_BACKGROUND_COLOR 0x333333
 
 static lv_obj_t *base_obj;
 static lv_obj_t *chart_cpu;
@@ -134,11 +133,11 @@ static void task_get_uptime(lv_timer_t *arg)
     uptime_min = uptime_sec / 60;
 
     if (uptime_min > 1440)
-        snprintf(buffer, sizeof(buffer), "%d days\n", uptime_min / 1440);
+        snprintf(buffer, sizeof(buffer), "%d days", uptime_min / 1440);
     else if (uptime_min > 60)
-        snprintf(buffer, sizeof(buffer), "%d hours\n", uptime_min / 60);
+        snprintf(buffer, sizeof(buffer), "%d hours", uptime_min / 60);
     else
-        snprintf(buffer, sizeof(buffer), "%d min\n", uptime_min);
+        snprintf(buffer, sizeof(buffer), "%d min", uptime_min);
 
     lv_label_set_text(text, buffer);
 }
@@ -173,10 +172,9 @@ static void task_get_net_speed(lv_timer_t *arg)
         snprintf(buffer_upload, sizeof(buffer_upload), "#009080 "LV_SYMBOL_UPLOAD "# %.1fMb/s ", upload_speed_mps);
 
     if(download_speed_mps >= 10.0)
-        snprintf(buffer_download, sizeof(buffer_download), "#005080 "LV_SYMBOL_DOWNLOAD "# %-3dMb/s", (int)download_speed_mps);
+        snprintf(buffer_download, sizeof(buffer_download), "#0060f0 "LV_SYMBOL_DOWNLOAD "# %-3dMb/s", (int)download_speed_mps);
     else
-        snprintf(buffer_download, sizeof(buffer_download), "#005080 "LV_SYMBOL_DOWNLOAD "# %.1fMb/s", download_speed_mps);
-
+        snprintf(buffer_download, sizeof(buffer_download), "#0060f0 " LV_SYMBOL_DOWNLOAD "# %.1fMb/s", download_speed_mps);
 
     lv_label_set_text_fmt(text, "%s%s", buffer_upload, buffer_download);
 }
@@ -220,7 +218,7 @@ static void task_get_temperature(lv_timer_t *arg)
     }
     lv_arc_set_value(temp_info->arc, temp);
     lv_arc_set_value(temp_info->arc, temp);
-    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00fff3 %d#'C", temp);
+    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00ffff %d#'C", temp);
 }
 
 static void task_get_time(lv_timer_t *arg)
@@ -275,35 +273,34 @@ void lv_monitor_base_init(void)
 
     lv_style_init(&default_style);
     lv_style_set_text_color(&default_style, lv_color_white());
+    lv_style_set_text_font(&default_style, &JetBrains_Momo_12);
 }
 
 void lv_monitor_cpu_init(void)
 {
-    static lv_obj_t *cpu_obj;
-
+    static lv_obj_t *cpu_obj = NULL;
     cpu_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(cpu_obj, 140, 95);
+    lv_obj_set_size(cpu_obj, CPU_LABLE_SIZE_X, TOP_LABLE_SIZE_Y);
     lv_obj_set_style_bg_color(cpu_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(cpu_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_align(cpu_obj, LV_ALIGN_TOP_LEFT, 0, -5);
     lv_obj_clear_flag(cpu_obj, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *title = lv_label_create(cpu_obj);
+    static lv_obj_t *title = NULL;
+    title = lv_label_create(cpu_obj);
     lv_label_set_text(title, "CPU");
-    lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, LABEL_TITLE_OFFSET_X, LABEL_TITLE_OFFSET_Y);
     lv_obj_add_style(title, &default_style, LV_PART_MAIN);
 
     static lv_obj_t *text = NULL;
     text = lv_label_create(cpu_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, LABEL_MSG_OFFSET_X, LABEL_MSG_OFFSET_Y);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     chart_cpu = lv_chart_create(cpu_obj);
-    lv_obj_set_size(chart_cpu, 130, 80);
-    lv_obj_align(chart_cpu, LV_ALIGN_CENTER, 0, 8);
+    lv_obj_set_size(chart_cpu, CHART_SIZE_X, CHART_SIZE_Y);
+    lv_obj_align(chart_cpu, LV_ALIGN_BOTTOM_MID, LABEL_CHART_OFFSET_X, LABEL_CHART_OFFSET_Y);
     lv_obj_set_style_bg_color(chart_cpu, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(chart_cpu, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_opa(chart_cpu, LV_OPA_COVER, LV_PART_MAIN);
@@ -323,31 +320,30 @@ void lv_monitor_cpu_init(void)
 
 void lv_monitor_mem_init(void)
 {
-    static lv_obj_t *mem_obj;
+    static lv_obj_t *mem_obj = NULL;
     mem_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(mem_obj, 140, 95);
+    lv_obj_set_size(mem_obj, MEM_LABLE_SIZE_X, TOP_LABLE_SIZE_Y);
     lv_obj_set_style_bg_color(mem_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(mem_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_align(mem_obj, LV_ALIGN_TOP_RIGHT, 0, -5);
     lv_obj_clear_flag(mem_obj, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *title = lv_label_create(mem_obj);
+    static lv_obj_t *title = NULL;
+    title = lv_label_create(mem_obj);
     lv_label_set_text(title, "MEM");
-    lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, LABEL_TITLE_OFFSET_X, LABEL_TITLE_OFFSET_Y);
 
     static lv_obj_t *text = NULL;
     text = lv_label_create(mem_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, 12, -12);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(text, LV_ALIGN_TOP_RIGHT, LABEL_MSG_OFFSET_X, LABEL_MSG_OFFSET_Y);
 
     lv_obj_add_style(title, &default_style, LV_PART_MAIN);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     chart_mem = lv_chart_create(mem_obj);
-    lv_obj_set_size(chart_mem, 130, 80);
-    lv_obj_align(chart_mem, LV_ALIGN_CENTER, 0, 8);
+    lv_obj_set_size(chart_mem, CHART_SIZE_X, CHART_SIZE_Y);
+    lv_obj_align(chart_mem, LV_ALIGN_BOTTOM_MID, LABEL_CHART_OFFSET_X, LABEL_CHART_OFFSET_Y);
     lv_obj_set_style_bg_color(chart_mem, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(chart_mem, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_opa(chart_mem, LV_OPA_COVER, LV_PART_MAIN);
@@ -368,10 +364,10 @@ void lv_monitor_mem_init(void)
 
 void lv_monitor_disk_init(void)
 {
-    static lv_obj_t *disk_obj;
+    static lv_obj_t *disk_obj = NULL;
     disk_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(disk_obj, 90, 95);
-    lv_obj_align(disk_obj, LV_ALIGN_BOTTOM_LEFT, 0, -20);
+    lv_obj_set_size(disk_obj, DISK_LABLE_SIZE_X, MID_LABLE_SIZE_Y);
+    lv_obj_align(disk_obj, LV_ALIGN_LEFT_MID, -2, (MID_LABLE_SIZE_Y - BOT_LABLE_SIZE_Y) / 2);
     lv_obj_clear_flag(disk_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_opa(disk_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_bg_color(disk_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
@@ -382,7 +378,7 @@ void lv_monitor_disk_init(void)
     lv_arc_set_rotation(disk_info.arc, 270);
     lv_arc_set_angles(disk_info.arc, 0, 360);
     lv_arc_set_bg_angles(disk_info.arc, 0, 360);
-    lv_obj_set_size(disk_info.arc, 70, 70);
+    lv_obj_set_size(disk_info.arc, LABEL_ARC_SIZE_X, LABEL_ARC_SIZE_Y);
 
     static lv_style_t fg_style, bg_style;
     lv_style_init(&fg_style);
@@ -390,11 +386,11 @@ void lv_monitor_disk_init(void)
 
     lv_style_set_arc_color(&fg_style, lv_color_white());
     lv_style_set_arc_rounded(&fg_style, false);
-    lv_style_set_arc_width(&fg_style, 6);
+    lv_style_set_arc_width(&fg_style, LABEL_ARC_WIDTH);
 
     lv_style_set_arc_color(&bg_style, lv_color_hex(0xE91E63));
     lv_style_set_arc_rounded(&bg_style, false);
-    lv_style_set_arc_width(&bg_style, 6);
+    lv_style_set_arc_width(&bg_style, LABEL_ARC_WIDTH);
 
     lv_obj_add_style(disk_info.arc, &fg_style, LV_PART_MAIN);
     lv_obj_add_style(disk_info.arc, &bg_style, LV_PART_INDICATOR);
@@ -404,20 +400,17 @@ void lv_monitor_disk_init(void)
 
     disk_info.title = lv_label_create(disk_obj);
     lv_label_set_text(disk_info.title, "Disk");
-    lv_obj_align(disk_info.title, LV_ALIGN_TOP_LEFT, -10,-12);
-    lv_obj_set_style_text_font(disk_info.title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(disk_info.title, LV_ALIGN_TOP_LEFT, LABEL_TITLE_OFFSET_X, LABEL_TITLE_OFFSET_Y);
 
     disk_info.useinfo = lv_label_create(disk_obj);
     lv_label_set_text(disk_info.useinfo, "");
-    lv_obj_align(disk_info.useinfo, LV_ALIGN_CENTER, 0, 8);
-    lv_obj_set_style_text_font(disk_info.useinfo, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(disk_info.useinfo, LV_ALIGN_CENTER, 0, MID_LABLE_SIZE_Y - DISK_LABLE_SIZE_X);
     lv_obj_set_style_text_align(disk_info.useinfo, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_recolor(disk_info.useinfo, true);
 
     disk_info.userate = lv_label_create(disk_obj);
     lv_label_set_text(disk_info.userate, "");
-    lv_obj_align(disk_info.userate, LV_ALIGN_TOP_RIGHT, 10, -12);
-    lv_obj_set_style_text_font(disk_info.userate, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(disk_info.userate, LV_ALIGN_TOP_RIGHT, LABEL_MSG_OFFSET_X, LABEL_MSG_OFFSET_Y);
     lv_obj_set_style_text_align(disk_info.userate, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_recolor(disk_info.userate, true);
 
@@ -431,10 +424,10 @@ void lv_monitor_disk_init(void)
 
 void lv_monitor_thermal_init(void)
 {
-    static lv_obj_t *cpu_temp_obj;
+    static lv_obj_t *cpu_temp_obj = NULL;
     cpu_temp_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(cpu_temp_obj, 90, 95);
-    lv_obj_align(cpu_temp_obj, LV_ALIGN_BOTTOM_MID, -2, -20);
+    lv_obj_set_size(cpu_temp_obj, THERMAL_LABLE_SIZE_X, MID_LABLE_SIZE_Y);
+    lv_obj_align(cpu_temp_obj, LV_ALIGN_CENTER, -2, (MID_LABLE_SIZE_Y - BOT_LABLE_SIZE_Y) / 2);
     lv_obj_clear_flag(cpu_temp_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_opa(cpu_temp_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_bg_color(cpu_temp_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
@@ -450,28 +443,26 @@ void lv_monitor_thermal_init(void)
     lv_style_init(&fg_style);
     lv_style_init(&bg_style);
 
-    lv_obj_set_size(temp_info.arc, 70, 70);
+    lv_obj_set_size(temp_info.arc, LABEL_ARC_SIZE_X, LABEL_ARC_SIZE_Y);
     lv_style_set_arc_color(&fg_style, lv_color_white());
     lv_style_set_arc_rounded(&fg_style, false);
-    lv_style_set_arc_width(&fg_style, 6);
+    lv_style_set_arc_width(&fg_style, LABEL_ARC_WIDTH);
 
-    lv_style_set_arc_color(&bg_style, lv_color_hex(0x00fff3));
+    lv_style_set_arc_color(&bg_style, lv_color_hex(0x00ffff));
     lv_style_set_arc_rounded(&bg_style, false);
-    lv_style_set_arc_width(&bg_style, 6);
+    lv_style_set_arc_width(&bg_style, LABEL_ARC_WIDTH);
 
     lv_obj_add_style(temp_info.arc, &fg_style, LV_PART_MAIN);
     lv_obj_add_style(temp_info.arc, &bg_style, LV_PART_INDICATOR);
 
     temp_info.title = lv_label_create(cpu_temp_obj);
     lv_label_set_text(temp_info.title, "Thermal");
-    lv_obj_align(temp_info.title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(temp_info.title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(temp_info.title, LV_ALIGN_TOP_LEFT, LABEL_TITLE_OFFSET_X, LABEL_TITLE_OFFSET_Y);
     lv_obj_add_style(temp_info.title, &default_style, LV_PART_MAIN);
 
     temp_info.temperature = lv_label_create(cpu_temp_obj);
     lv_label_set_text(temp_info.temperature, " ");
-    lv_obj_align(temp_info.temperature, LV_ALIGN_CENTER, 0, 5);
-    lv_obj_set_style_text_font(temp_info.temperature, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(temp_info.temperature, LV_ALIGN_CENTER, 0, MID_LABLE_SIZE_Y - THERMAL_LABLE_SIZE_X);
     lv_label_set_recolor(temp_info.temperature, true);
     lv_obj_add_style(temp_info.temperature, &default_style, LV_PART_MAIN);
 
@@ -484,10 +475,10 @@ void lv_monitor_thermal_init(void)
 
 void lv_monitor_task_counter_init(void)
 {
-    static lv_obj_t *task_obj;
+    static lv_obj_t *task_obj = NULL;
     task_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(task_obj, 95, 95);
-    lv_obj_align(task_obj, LV_ALIGN_BOTTOM_RIGHT, 0, -20);
+    lv_obj_set_size(task_obj, TASK_LABLE_SIZE_X, MID_LABLE_SIZE_Y);
+    lv_obj_align(task_obj, LV_ALIGN_RIGHT_MID, 0, (MID_LABLE_SIZE_Y - BOT_LABLE_SIZE_Y) / 2);
     lv_obj_clear_flag(task_obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_opa(task_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_bg_color(task_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
@@ -495,55 +486,52 @@ void lv_monitor_task_counter_init(void)
     static lv_obj_t *title = NULL;;
     title = lv_label_create(task_obj);
     lv_label_set_text(title, "Task");
-    lv_obj_align(title, LV_ALIGN_TOP_LEFT, -10, -12);
-    lv_obj_set_style_text_font(title, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_obj_align(title, LV_ALIGN_TOP_LEFT, LABEL_TITLE_OFFSET_X, LABEL_TITLE_OFFSET_Y);
 
     static lv_obj_t *proc_info = NULL;
     proc_info = lv_label_create(task_obj);
     lv_label_set_text(proc_info, " ");
-    lv_obj_align(proc_info, LV_ALIGN_CENTER, 0, 10);
-    lv_obj_set_style_text_font(proc_info, &JetBrains_Momo_14, LV_PART_MAIN);
     lv_label_set_recolor(proc_info, true);
+    lv_obj_align(proc_info, LV_ALIGN_CENTER, 0, lv_obj_get_height(title));
 
     static lv_style_t font_style;
     lv_style_init(&font_style);
     lv_style_set_text_color(&font_style, lv_color_white());
-    lv_style_set_text_line_space(&font_style, 8);
-    lv_obj_add_style(title, &font_style, LV_PART_MAIN);
+    lv_style_set_text_line_space(&font_style, MID_LABLE_SIZE_Y/11);
+    lv_style_set_text_font(&font_style, &JetBrains_Momo_14);
+    lv_obj_add_style(title, &default_style, LV_PART_MAIN);
     lv_obj_add_style(proc_info, &font_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(task_count_process, 1000 * 3, (void *)proc_info);
     task_count_process(timer);
 }
 
-void lv_monitor_uptime_init(void)
+void lv_monitor_time_init(void)
 {
-    static lv_obj_t *other_obj;
+    static lv_obj_t *other_obj = NULL;
     other_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(other_obj, 65, 20);
+    lv_obj_set_size(other_obj, TIME_LABLE_SIZE_X, BOT_LABLE_SIZE_Y);
     lv_obj_set_style_bg_color(other_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(other_obj, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_align(other_obj, LV_ALIGN_BOTTOM_RIGHT, 0, 4);
+    lv_obj_align(other_obj, LV_ALIGN_BOTTOM_LEFT, 0, 4);
     lv_obj_clear_flag(other_obj, LV_OBJ_FLAG_SCROLLABLE);
 
     static lv_obj_t *text = NULL;
     text = lv_label_create(base_obj);
-    lv_label_set_text(text, " ");
-    lv_obj_set_width(text, 60);
-    lv_obj_align(text, LV_ALIGN_BOTTOM_RIGHT, -3, 12);
-    lv_obj_set_style_text_align(text, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
+    lv_label_set_text(text, "");
+    lv_label_set_recolor(text, true);
+    lv_obj_align(text, LV_ALIGN_BOTTOM_LEFT, 5, 0);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
-    lv_timer_t *timer = lv_timer_create(task_get_uptime, 1000 * 30, (void *)text);
-    task_get_uptime(timer);
+    lv_timer_t *timer = lv_timer_create(task_get_time, 1000 * 1, (void *)text);
+    task_get_time(timer);
 }
 
 void lv_monitor_network_init(void)
 {
-    static lv_obj_t *ethernet_obj;
+    static lv_obj_t *ethernet_obj = NULL;
     ethernet_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(ethernet_obj, 150, 20);
+    lv_obj_set_size(ethernet_obj, NET_LABLE_SIZE_X, BOT_LABLE_SIZE_Y);
     lv_obj_set_style_bg_color(ethernet_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(ethernet_obj, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_align(ethernet_obj, LV_ALIGN_BOTTOM_MID, 0, 4);
@@ -552,34 +540,32 @@ void lv_monitor_network_init(void)
     static lv_obj_t *text = NULL;
     text = lv_label_create(base_obj);
     lv_label_set_text(text, " ");
-    lv_obj_align(text, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
     lv_label_set_recolor(text, true);
+    lv_obj_align(text, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
 
     lv_timer_t *timer = lv_timer_create(task_get_net_speed, 1000 * 1, (void *)text);
     task_get_net_speed(timer);
 }
 
-
-void lv_monitor_time_init(void)
+void lv_monitor_uptime_init(void)
 {
-    static lv_obj_t *other_obj;
+    static lv_obj_t *other_obj = NULL;
     other_obj = lv_obj_create(base_obj);
-    lv_obj_set_size(other_obj, 65, 20);
+    lv_obj_set_size(other_obj, UPTIME_LABLE_SIZE_X, BOT_LABLE_SIZE_Y);
     lv_obj_set_style_bg_color(other_obj, lv_color_hex(OBJ_BACKGROUND_COLOR), LV_PART_MAIN);
     lv_obj_set_style_border_opa(other_obj, LV_OPA_TRANSP, LV_PART_MAIN);
-    lv_obj_align(other_obj, LV_ALIGN_BOTTOM_LEFT, 0, 4);
+    lv_obj_align(other_obj, LV_ALIGN_BOTTOM_RIGHT, 0, 4);
     lv_obj_clear_flag(other_obj, LV_OBJ_FLAG_SCROLLABLE);
+
     static lv_obj_t *text = NULL;
-
     text = lv_label_create(base_obj);
-    lv_label_set_text(text, "");
-    lv_obj_align(text, LV_ALIGN_BOTTOM_LEFT, 5, 0);
-    lv_obj_set_style_text_font(text, &JetBrains_Momo_12, LV_PART_MAIN);
-    lv_label_set_recolor(text, true);
+    lv_label_set_text(text, " ");
+    lv_obj_set_width(text, UPTIME_LABLE_SIZE_X);
+    lv_obj_align(text, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    lv_obj_set_style_text_align(text, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_add_style(text, &default_style, LV_PART_MAIN);
-
-    lv_timer_t *timer = lv_timer_create(task_get_time, 1000 * 1, (void *)text);
-    task_get_time(timer);
+    lv_obj_set_style_text_font(text, &JetBrains_Momo_14, LV_PART_MAIN);
+    lv_timer_t *timer = lv_timer_create(task_get_uptime, 1000 * 30, (void *)text);
+    task_get_uptime(timer);
 }
