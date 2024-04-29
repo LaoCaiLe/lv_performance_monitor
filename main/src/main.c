@@ -1,110 +1,66 @@
-#define _DEFAULT_SOURCE /* needed for usleep() */
-#include <stdlib.h>
-#include <unistd.h>
-#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain" issue*/
-#include <SDL2/SDL.h>
 #include "lvgl/lvgl.h"
-#include "lvgl/examples/lv_examples.h"
-#include "lv_drivers/sdl/sdl.h"
-#include "monitor.h"
+#include "lvgl/demos/lv_demos.h"
+#include "lv_drivers/display/fbdev.h"
+#include "lv_drivers/indev/evdev.h"
+#include <unistd.h>
+#include <pthread.h>
+#include <time.h>
+#include <sys/time.h>
+#include <monitor.h>
 
-static void hal_init(void);
-static int tick_thread(void *data);
+#define DISP_BUF_SIZE (128 * 1024)
 
-int main(int argc, char *argv[])
+int main(void)
 {
+    /*LittlevGL init*/
     lv_init();
-    hal_init();
 
+    /*Linux frame buffer device init*/
+    fbdev_init();
+
+    /*A small buffer for LittlevGL to draw the screen's content*/
+    static lv_color_t buf[DISP_BUF_SIZE];
+
+    /*Initialize a descriptor for the buffer*/
+    static lv_disp_draw_buf_t disp_buf;
+    lv_disp_draw_buf_init(&disp_buf, buf, NULL, DISP_BUF_SIZE);
+
+    /*Initialize and register a display driver*/
+    static lv_disp_drv_t disp_drv;
+    lv_disp_drv_init(&disp_drv);
+    disp_drv.draw_buf   = &disp_buf;
+    disp_drv.flush_cb   = fbdev_flush;
+    disp_drv.hor_res    = 320;
+    disp_drv.ver_res    = 240;
+    lv_disp_drv_register(&disp_drv);
+
+    /*Create a Demo*/
     lv_monitor_show();
 
-    while (1)
-    {
+    /*Handle LitlevGL tasks (tickless mode)*/
+    while(1) {
         lv_timer_handler();
-        usleep(5 * 1000);
+        usleep(5000);
     }
 
     return 0;
 }
 
-/**
- * Initialize the Hardware Abstraction Layer (HAL) for the LVGL graphics
- * library
- */
-static void hal_init(void)
+/*Set in lv_conf.h as `LV_TICK_CUSTOM_SYS_TIME_EXPR`*/
+uint32_t custom_tick_get(void)
 {
-    /* Use the 'monitor' driver which creates window on PC's monitor to simulate a display*/
-    sdl_init();
-    /* Tick init.
-     * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about
-     * how much time were elapsed Create an SDL thread to do this*/
-    SDL_CreateThread(tick_thread, "tick", NULL);
-
-    /*Create a display buffer*/
-    static lv_disp_draw_buf_t disp_buf1;
-    static lv_color_t buf1_1[MONITOR_HOR_RES * 100];
-    static lv_color_t buf1_2[MONITOR_HOR_RES * 100];
-    lv_disp_draw_buf_init(&disp_buf1, buf1_1, buf1_2, MONITOR_HOR_RES * 100);
-
-    /*Create a display*/
-    static lv_disp_drv_t disp_drv;
-    lv_disp_drv_init(&disp_drv); /*Basic initialization*/
-    disp_drv.draw_buf = &disp_buf1;
-    disp_drv.flush_cb = sdl_display_flush;
-    disp_drv.hor_res = MONITOR_HOR_RES;
-    disp_drv.ver_res = MONITOR_VER_RES;
-    disp_drv.antialiasing = 1;
-
-    lv_disp_t *disp = lv_disp_drv_register(&disp_drv);
-
-    lv_theme_t *th = lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), LV_THEME_DEFAULT_DARK, LV_FONT_DEFAULT);
-    lv_disp_set_theme(disp, th);
-
-    lv_group_t *g = lv_group_create();
-    lv_group_set_default(g);
-
-    /* Add the mouse as input device
-     * Use the 'mouse' driver which reads the PC's mouse*/
-    // mouse_init();
-    static lv_indev_drv_t indev_drv_1;
-    lv_indev_drv_init(&indev_drv_1); /*Basic initialization*/
-    indev_drv_1.type = LV_INDEV_TYPE_POINTER;
-
-    /*This function will be called periodically (by the library) to get the mouse position and state*/
-    indev_drv_1.read_cb = sdl_mouse_read;
-    lv_indev_t *mouse_indev = lv_indev_drv_register(&indev_drv_1);
-
-    // keyboard_init();
-    static lv_indev_drv_t indev_drv_2;
-    lv_indev_drv_init(&indev_drv_2); /*Basic initialization*/
-    indev_drv_2.type = LV_INDEV_TYPE_KEYPAD;
-    indev_drv_2.read_cb = sdl_keyboard_read;
-    lv_indev_t *kb_indev = lv_indev_drv_register(&indev_drv_2);
-    lv_indev_set_group(kb_indev, g);
-    // mousewheel_init();
-    static lv_indev_drv_t indev_drv_3;
-    lv_indev_drv_init(&indev_drv_3); /*Basic initialization*/
-    indev_drv_3.type = LV_INDEV_TYPE_ENCODER;
-    indev_drv_3.read_cb = sdl_mousewheel_read;
-
-    lv_indev_t *enc_indev = lv_indev_drv_register(&indev_drv_3);
-    lv_indev_set_group(enc_indev, g);
-}
-
-/**
- * A task to measure the elapsed time for LVGL
- * @param data unused
- * @return never return
- */
-static int tick_thread(void *data)
-{
-    (void)data;
-
-    while (1)
-    {
-        SDL_Delay(5);
-        lv_tick_inc(5); /*Tell LittelvGL that 5 milliseconds were elapsed*/
+    static uint64_t start_ms = 0;
+    if(start_ms == 0) {
+        struct timeval tv_start;
+        gettimeofday(&tv_start, NULL);
+        start_ms = (tv_start.tv_sec * 1000000 + tv_start.tv_usec) / 1000;
     }
 
-    return 0;
+    struct timeval tv_now;
+    gettimeofday(&tv_now, NULL);
+    uint64_t now_ms;
+    now_ms = (tv_now.tv_sec * 1000000 + tv_now.tv_usec) / 1000;
+
+    uint32_t time_ms = now_ms - start_ms;
+    return time_ms;
 }
