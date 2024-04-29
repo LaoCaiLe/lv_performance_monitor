@@ -20,17 +20,18 @@ WARNINGS 			:= -Wall -Wextra \
 						-Wno-unused-function -Wno-error=strict-prototypes -Wpointer-arith -fno-strict-aliasing -Wno-error=cpp -Wuninitialized \
 						-Wno-unused-parameter -Wno-missing-field-initializers -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default  \
 						-Wreturn-type -Wmultichar -Wformat-security -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated  \
-						-Wempty-body -Wshift-negative-value -Wstack-usage=2048 \
+						-Wempty-body  -Wstack-usage=2048 \
 						-Wtype-limits -Wsizeof-pointer-memaccess -Wpointer-arith
 
-CFLAGS 				:= -O0 -g $(WARNINGS)
+CFLAGS 				:= -O0 -g -std=c99 $(WARNINGS)
+DEFINES				:= -D_GNU_SOURCE
 
 # Include simulator inc folder first so lv_conf.h from custom UI can be used instead
 INC 				:= -I./lv_monitor/ -I./ -I./lvgl/ #-I/usr/include/freetype2 -L/usr/local/lib
 
 BIN 				:= $(BIN_DIR)/demo
 
-COMPILE				= $(CC) $(CFLAGS) $(INC)
+COMPILE				= $(CC) $(CFLAGS) $(INC) $(DEFINES)
 
 # Automatically include all source files
 SRC_C 				:= $(shell find $(SRC_DIR) -type f -name '*.c' -not -path '*/\.*')
