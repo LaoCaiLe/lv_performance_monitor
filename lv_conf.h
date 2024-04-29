@@ -14,7 +14,6 @@
 /*clang-format off*/
 
 #include <stdint.h>
-#include "lv_demo_conf.h"
 
 /*====================
    COLOR SETTINGS
