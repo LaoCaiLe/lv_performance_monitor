@@ -95,8 +95,8 @@
 #endif
 
 #if USE_SDL || USE_SDL_GPU
-#  define SDL_HOR_RES     320
-#  define SDL_VER_RES     240
+#  define SDL_HOR_RES     640
+#  define SDL_VER_RES     480
 
 #define MONITOR_HOR_RES SDL_HOR_RES
 #define MONITOR_VER_RES SDL_VER_RES
