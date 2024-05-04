@@ -1,69 +1,42 @@
-# Simulator project for LVGL embedded GUI Library
+# performance_monitor_base_lvgl
 
-The [LVGL](https://github.com/lvgl/lvgl) is written mainly for microcontrollers and embedded systems however you can run the library **on your PC** as well without any embedded hardware. The code written on PC can be simply copied when your are using an embedded system.
+基于lvgl开源库实现的linux性能监测程序
 
-Using a PC simulator instead of an embedded hardware has several advantages:
-* **Costs $0** because you don't have to buy or design PCB
-* **Fast** because you don't have to design and manufacture PCB
-* **Collaborative** because any number of developers can work in the same environment
-* **Developer friendly** because much easier and faster to debug on PC
+![PixPin_2024-04-30_00-19-00](https://github.com/LaoCaiLe/lv_performance_monitor/assets/70246846/beeadfee-e3da-4696-8135-2fe6329ed695)
 
-## Requirements
-This project is configured for VSCode and only tested on Linux, although this may work on OSx or WSL. It requires a working version of GCC, GDB and make in your path.
-
-To allow debugging inside VSCode you will also require a GDB [extension](https://marketplace.visualstudio.com/items?itemName=webfreak.debug) or other suitable debugger.
-
-* **SDL** a low level driver library to use graphics, handle mouse, keyboard etc.
-
-## Usage
-
-### Get the PC project
-
-Clone the PC project and the related sub modules:
-
-```bash
-git clone --recursive https://github.com/lvgl/lv_port_pc_vscode
+## Install SDL
 ```
-
-### Install SDL
-You can download SDL from https://www.libsdl.org/
-
-On on Linux you can install it via terminal:
-```bash
+编译master分支程序需要添加sdl环境
 sudo apt-get update && sudo apt-get install -y build-essential libsdl2-dev
 ```
 
-### Optional library
-There are also FreeType and FFmpeg support. You can install FreeType support with:
-```bash
-# FreeType support
-wget https://kumisystems.dl.sourceforge.net/project/freetype/freetype2/2.13.2/freetype-2.13.2.tar.xz
-tar -xf freetype-2.13.2.tar.xz
-cd freetype-2.13.2
-make
-make install
+## Clone
+```
+git clone https://github.com/LaoCaiLe/lv_performance_monitor/
+cd lv_performance_monitor/
+git submodule update --init --recursive [--depth=1]
 ```
 
-The FFmpeg support can be installed with:
-```bash
-# FFmpeg support
-git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg
-cd ffmpeg
-git checkout release/6.0
-./configure --disable-all --disable-autodetect --disable-podpages --disable-asm --enable-avcodec --enable-avformat --enable-decoders --enable-encoders --enable-demuxers --enable-parsers --enable-protocol='file' --enable-swscale --enable-zlib
-make
-sudo make install
+## Build
+```
+cd lv_performance_monitor/
+make -j
 ```
 
-And then remove all the comments in the `Makefile` on `INC` and `LDLIBS` lines. They should be:
-```Makefile
-INC 				:= -I./ui/simulator/inc/ -I./ -I./lvgl/ -I/usr/include/freetype2 -L/usr/local/lib
-LDLIBS	 			:= -lSDL2 -lm -lfreetype -lavformat -lavcodec -lavutil -lswscale -lm -lz -lpthread
+## Run
+**master**:
 ```
-
-### Setup
-To allow custom UI code an `lv_conf.h` file placed at `ui/simulator/inc` will automatically override this projects lv_conf.h file. By default code under `ui` is ignored so you can reuse this repository for multiple projects. You will need to place a call from `main.c` to your UI's entry function.
-
-To build and debug, press F5. You should now have your UI displayed in a new window and can access all the debug features of VSCode through GDB.
-
-To allow temporary modification between simulator and device code, a SIMULATOR=1 define is added globally.
+./demo
+```
+**on-board**:
+```
+确保已添加/dev/fb0设备
+sudo adduser $USER video 设置用户为video组
+./demo
+```
+## repo_info
+```
+master分支： forked from https://github.com/lvgl/lv_port_pc_vscode -> 用于ubuntu系统
+on-board分支： forked from https://github.com/lvgl/lv_port_linux_frame_buffer -> 用于linux开发板
+lvgl版本：v8.3.9
+```
