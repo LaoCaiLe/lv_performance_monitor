@@ -14,7 +14,7 @@ enum Result
 #define MEM_PROC_PATH "/proc/meminfo"
 #define TIME_PROC_PATH "/proc/uptime"
 #define DISK_MSG_CMD "df /"
-#define ETHER_DEVICE "eth0"
+#define NET_DEVICE_PATH "/sys/class/net"
 #define CPU_TEMP_PATH "/sys/class/thermal/thermal_zone0/temp"
 
 int get_cpu_load(uint16_t *cpu_load);
