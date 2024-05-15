@@ -9,6 +9,7 @@
 #include <time.h>
 #include <dirent.h>
 #include <errno.h>
+#include <dirent.h>
 
 int get_cpu_load(uint16_t *cpu_load)
 {
@@ -127,46 +128,59 @@ int get_network_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps)
     static uint64_t prev_upload_speed = 0;
     static uint64_t prev_download_speed = 0;
     static bool is_first = true;
-
-    snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/operstate", ETHER_DEVICE);
-    file = fopen(file_path, "r");
-    if (file == NULL)
+    struct dirent *sdp;
+    DIR *dp;
+    dp = opendir(NET_DEVICE_PATH);
+    if (dp == NULL)
     {
-        LV_LOG_ERROR("can not open file %s!\n", file_path);
+        LV_LOG_ERROR("can not open file %s!\n", NET_DEVICE_PATH);
         return ret_fail;
     }
-    fgets(line, sizeof(line), file);
-    if(0 != strcmp(line, "up\n")) {
-        LV_LOG_ERROR("%s is not connect!\n", ETHER_DEVICE);
+    while ((sdp = readdir(dp)) != NULL)
+    {
+        if (0 == strcmp(".", sdp->d_name) || 0 == strcmp("..", sdp->d_name) || sdp->d_type != DT_LNK)
+            continue;
+        snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/operstate", sdp->d_name);
+        file = fopen(file_path, "r");
+        if (file == NULL)
+        {
+            LV_LOG_ERROR("can not open file %s!\n", file_path);
+            return ret_fail;
+        }
+        fgets(line, sizeof(line), file);
+        if (0 != strcmp(line, "up\n"))
+        {
+            LV_LOG_INFO("%s is not connect!\n", sdp->d_name);
+            fclose(file);
+            continue;
+        }
         fclose(file);
-        return ret_fail;
-    }
-    fclose(file);
 
-    memset(line, 0x00, sizeof(line));
-    snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/rx_bytes", ETHER_DEVICE);
-    file = fopen(file_path, "r");
-    if (file == NULL)
-    {
-        LV_LOG_ERROR("can not open file %s!\n", file_path);
-        return ret_fail;
-    }
-    fgets(line, sizeof(line), file);
-    curr_download_speed = atoll(line);
-    fclose(file);
+        memset(line, 0x00, sizeof(line));
+        snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/rx_bytes", sdp->d_name);
+        file = fopen(file_path, "r");
+        if (file == NULL)
+        {
+            LV_LOG_ERROR("can not open file %s!\n", file_path);
+            return ret_fail;
+        }
+        fgets(line, sizeof(line), file);
+        curr_download_speed += atoll(line);
+        fclose(file);
 
-    memset(line, 0x00, sizeof(line));
-    snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/tx_bytes", ETHER_DEVICE);
-    file = fopen(file_path, "r");
-    if (file == NULL)
-    {
-        LV_LOG_ERROR("can not open file %s!\n", file_path);
-        return ret_fail;
-    }
-    fgets(line, sizeof(line), file);
-    curr_upload_speed = atoll(line);
-    fclose(file);
+        memset(line, 0x00, sizeof(line));
+        snprintf(file_path, sizeof(file_path), "/sys/class/net/%s/statistics/tx_bytes", sdp->d_name);
+        file = fopen(file_path, "r");
+        if (file == NULL)
+        {
+            LV_LOG_ERROR("can not open file %s!\n", file_path);
+            return ret_fail;
+        }
+        fgets(line, sizeof(line), file);
+        curr_upload_speed += atoll(line);
+        fclose(file);
 
+    }
     *upload_speed_bps = (curr_upload_speed - prev_upload_speed) * 8;
     *download_speed_bps = (curr_download_speed - prev_download_speed) * 8;
 
@@ -181,6 +195,7 @@ int get_network_speed(uint64_t *upload_speed_bps, uint64_t *download_speed_bps)
     }
     LV_LOG_INFO("curr_download_speed[%llu], curr_upload_speed[%llu]\n", curr_download_speed, curr_upload_speed);
     LV_LOG_INFO("download_speed_bps[%llu], upload_speed_bps[%llu]\n", *download_speed_bps, *upload_speed_bps);
+    closedir(dp);
 
     return ret_ok;
 }
