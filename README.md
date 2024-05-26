@@ -2,7 +2,8 @@
 
 基于lvgl开源库实现的linux性能监测程序
 
-![PixPin_2024-04-30_00-19-00](https://github.com/LaoCaiLe/lv_performance_monitor/assets/70246846/beeadfee-e3da-4696-8135-2fe6329ed695)
+![image](https://github.com/LaoCaiLe/lv_performance_monitor/assets/70246846/18a4f003-87af-4294-a9a5-4a69cc499b14)
+
 
 ## repo_info
 ```
