@@ -9,10 +9,6 @@ static lv_chart_series_t *ser_cpu;
 static lv_chart_series_t *ser_mem;
 static lv_style_t default_style;
 
-LV_FONT_DECLARE(JetBrains_Momo_10)
-LV_FONT_DECLARE(JetBrains_Momo_11)
-LV_FONT_DECLARE(JetBrains_Momo_12)
-LV_FONT_DECLARE(JetBrains_Momo_14)
 LV_FONT_DECLARE(JetBrains_Momo_24)
 
 typedef struct _disk_info_t{
@@ -219,7 +215,7 @@ static void task_get_temperature(lv_timer_t *arg)
     }
     lv_arc_set_value(temp_info->arc, temp);
     lv_arc_set_value(temp_info->arc, temp);
-    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00ffff %d#'C", temp);
+    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00ffff %d#°C", temp);
 }
 
 static void task_get_time(lv_timer_t *arg)
