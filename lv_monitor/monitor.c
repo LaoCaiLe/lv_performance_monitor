@@ -9,8 +9,6 @@ static lv_chart_series_t *ser_cpu;
 static lv_chart_series_t *ser_mem;
 static lv_style_t default_style;
 
-LV_FONT_DECLARE(JetBrains_Momo_10)
-LV_FONT_DECLARE(JetBrains_Momo_11)
 LV_FONT_DECLARE(JetBrains_Momo_12)
 LV_FONT_DECLARE(JetBrains_Momo_14)
 
