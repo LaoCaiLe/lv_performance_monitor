@@ -216,7 +216,7 @@ static void task_get_temperature(lv_timer_t *arg)
     }
     lv_arc_set_value(temp_info->arc, temp);
     lv_arc_set_value(temp_info->arc, temp);
-    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00ffff %d#'C", temp);
+    lv_label_set_text_fmt(temp_info->temperature, "CPU:#00ffff %d#°C", temp);
 }
 
 static void task_get_time(lv_timer_t *arg)
